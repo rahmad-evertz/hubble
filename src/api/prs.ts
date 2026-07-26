@@ -1,0 +1,190 @@
+import { openPrQueries, type QueryContext } from '../lib/queries'
+import type {
+  CheckState,
+  Mergeable,
+  PanelKey,
+  Panels,
+  PrRole,
+  PullRequest,
+  ReviewDecision,
+  ReviewState,
+  Reviewer,
+} from '../types'
+import { graphql, type Credentials } from './client'
+
+export const PANEL_KEYS: PanelKey[] = ['mine', 'requested', 'assigned', 'mentioned']
+
+/** Which panel a PR arrived through is what tells us your relationship to it. */
+const PANEL_ROLE: Record<PanelKey, PrRole> = {
+  mine: 'author',
+  requested: 'reviewer',
+  assigned: 'assignee',
+  mentioned: 'mentioned',
+}
+
+/**
+ * `reviews(author: $login)` rather than `viewerLatestReview`: the latter reports
+ * the token owner's review, which is wrong whenever the dashboard is pointed at
+ * a username other than the token's own.
+ */
+const PR_FRAGMENT = `
+fragment PrPage on SearchResultItemConnection {
+  issueCount
+  pageInfo { hasNextPage endCursor }
+  nodes {
+    ... on PullRequest {
+      id
+      number
+      title
+      url
+      isDraft
+      createdAt
+      updatedAt
+      repository { nameWithOwner }
+      author { login __typename }
+      reviewDecision
+      mergeable
+      additions
+      deletions
+      changedFiles
+      reviews(last: 1, author: $login) { nodes { state } }
+      reviewRequests(first: 10) {
+        nodes { requestedReviewer { ... on User { login avatarUrl } } }
+      }
+      commits(last: 1) { nodes { commit { statusCheckRollup { state } } } }
+    }
+  }
+}`
+
+/**
+ * All four panels in one request. Aliased sub-queries share a rate-limit cost of
+ * a single point, so splitting these would be strictly more expensive.
+ */
+const PANELS_QUERY = `
+query Panels(
+  $mine: String!
+  $requested: String!
+  $assigned: String!
+  $mentioned: String!
+  $login: String!
+  $first: Int!
+) {
+  mine:      search(query: $mine,      type: ISSUE, first: $first) { ...PrPage }
+  requested: search(query: $requested, type: ISSUE, first: $first) { ...PrPage }
+  assigned:  search(query: $assigned,  type: ISSUE, first: $first) { ...PrPage }
+  mentioned: search(query: $mentioned, type: ISSUE, first: $first) { ...PrPage }
+  rateLimit { cost remaining limit resetAt }
+}
+${PR_FRAGMENT}`
+
+type RawNode = {
+  id?: string
+  number?: number
+  title?: string
+  url?: string
+  isDraft?: boolean
+  createdAt?: string
+  updatedAt?: string
+  repository?: { nameWithOwner: string }
+  author?: { login: string; __typename: string } | null
+  reviewDecision?: ReviewDecision
+  mergeable?: Mergeable
+  additions?: number
+  deletions?: number
+  changedFiles?: number
+  reviews?: { nodes: { state: ReviewState }[] } | null
+  reviewRequests?: { nodes: { requestedReviewer: Partial<Reviewer> | null }[] } | null
+  commits?: { nodes: { commit: { statusCheckRollup: { state: CheckState } | null } }[] } | null
+}
+
+type RawPage = {
+  issueCount: number
+  pageInfo: { hasNextPage: boolean; endCursor: string | null }
+  nodes: RawNode[]
+}
+
+type PanelsResponse = Record<PanelKey, RawPage>
+
+/** `type: ISSUE` can return Issues too; non-PR nodes arrive as empty objects. */
+function isPullRequest(node: RawNode): node is RawNode & { id: string } {
+  return typeof node.id === 'string' && typeof node.number === 'number'
+}
+
+function toPullRequest(node: RawNode & { id: string }, roles: Set<PrRole>): PullRequest {
+  const reviewers: Reviewer[] = (node.reviewRequests?.nodes ?? [])
+    .map((entry) => entry.requestedReviewer)
+    // Teams and bots can be requested reviewers; only Users have a login here.
+    .filter((r): r is Reviewer => Boolean(r?.login && r.avatarUrl))
+
+  return {
+    id: node.id,
+    number: node.number!,
+    title: node.title ?? '',
+    url: node.url ?? '',
+    isDraft: node.isDraft ?? false,
+    createdAt: node.createdAt ?? '',
+    updatedAt: node.updatedAt ?? '',
+    repo: node.repository?.nameWithOwner ?? '',
+    authorLogin: node.author?.login ?? null,
+    authorIsBot: node.author?.__typename === 'Bot',
+    reviewDecision: node.reviewDecision ?? null,
+    mergeable: node.mergeable ?? 'UNKNOWN',
+    additions: node.additions ?? 0,
+    deletions: node.deletions ?? 0,
+    changedFiles: node.changedFiles ?? 0,
+    userLatestReview: node.reviews?.nodes?.[0]?.state ?? null,
+    checkState: node.commits?.nodes?.[0]?.commit?.statusCheckRollup?.state ?? null,
+    waitingOn: reviewers,
+    roles: [...roles],
+  }
+}
+
+export type PanelsData = {
+  panels: Panels
+  /** Every distinct PR across all panels, for cross-panel lookups. */
+  all: PullRequest[]
+}
+
+export async function fetchPanels(
+  ctx: QueryContext,
+  creds: Credentials,
+  first = 50,
+): Promise<PanelsData> {
+  const queries = openPrQueries(ctx)
+  const data = await graphql<PanelsResponse>(
+    PANELS_QUERY,
+    { ...queries, login: ctx.username.trim(), first },
+    creds,
+  )
+
+  // Union roles across panels first, so a PR you authored *and* were mentioned
+  // in shows both badges no matter which panel you happen to be looking at.
+  const rolesById = new Map<string, Set<PrRole>>()
+  for (const key of PANEL_KEYS) {
+    for (const node of data[key]?.nodes ?? []) {
+      if (!isPullRequest(node)) continue
+      const set = rolesById.get(node.id) ?? new Set<PrRole>()
+      set.add(PANEL_ROLE[key])
+      rolesById.set(node.id, set)
+    }
+  }
+
+  const byId = new Map<string, PullRequest>()
+  const panels = {} as Panels
+  for (const key of PANEL_KEYS) {
+    const page = data[key]
+    const prs = (page?.nodes ?? [])
+      .filter(isPullRequest)
+      .map((node) => toPullRequest(node, rolesById.get(node.id) ?? new Set([PANEL_ROLE[key]])))
+    for (const pr of prs) byId.set(pr.id, pr)
+    panels[key] = {
+      // The server-side total can exceed what we fetched, so it is reported
+      // separately rather than inferred from the row count.
+      total: page?.issueCount ?? 0,
+      prs,
+      hasMore: page?.pageInfo?.hasNextPage ?? false,
+    }
+  }
+
+  return { panels, all: [...byId.values()] }
+}

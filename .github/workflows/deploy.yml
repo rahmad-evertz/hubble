@@ -1,0 +1,105 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run ci:check
+      - run: npm test
+
+  build:
+    needs: check
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+
+      - name: Write blank runtime config
+        # No repository secret is read here, and none is needed. Every visitor
+        # supplies their own token, username and organisation at runtime, so the
+        # published build contains no credentials, no data and no identifiers.
+        # That is what makes this safe to host publicly.
+        #
+        # Copied from the committed example rather than inlined, so the shipped
+        # shape cannot drift from the documented one. The gate below is what
+        # actually enforces that it is blank.
+        run: cp public/config/app-config.example.json public/config/app-config.json
+
+      - name: Build
+        # Derived from the repository name so a fork under any name deploys to the
+        # right sub-path without editing source.
+        run: |
+          export BASE_PATH="/${GITHUB_REPOSITORY#*/}/"
+          echo "Building with base $BASE_PATH"
+          npm run build
+
+      - name: Prepare SPA for Pages
+        # Pages serves 404.html for any unknown path, so pointing it at index.html
+        # keeps ?panel=… deep links working on reload. .nojekyll stops Jekyll from
+        # discarding files and folders that begin with an underscore.
+        run: |
+          cp dist/index.html dist/404.html
+          touch dist/.nojekyll
+
+      - name: Verify no secrets or identifiers leaked into the build
+        # A build that embedded a token or a hard-coded org would defeat the whole
+        # design, so the pipeline refuses to publish one. Asserted per-field rather
+        # than by exact string match: apiBaseUrl is legitimately non-blank, and a
+        # brittle whole-file comparison would fail on an unrelated added key.
+        run: |
+          node -e '
+            const cfg = JSON.parse(require("fs").readFileSync("dist/config/app-config.json", "utf8"));
+            console.log("shipped config:", JSON.stringify(cfg));
+            const bad = ["githubToken", "username", "org"].filter((k) => (cfg[k] ?? "") !== "");
+            if (bad.length) {
+              console.error(`::error::app-config.json ships a non-blank ${bad.join(", ")}`);
+              process.exit(1);
+            }
+          '
+          if grep -rIlE 'gh[pousr]_[A-Za-z0-9]{16,}' dist; then
+            echo "::error::a GitHub token pattern appears in the build output"
+            exit 1
+          fi
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

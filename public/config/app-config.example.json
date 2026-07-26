@@ -1,0 +1,8 @@
+{
+  "githubToken": "",
+  "username": "",
+  "org": "",
+  "apiBaseUrl": "https://api.github.com",
+  "ticketPattern": "",
+  "ticketBaseUrl": ""
+}

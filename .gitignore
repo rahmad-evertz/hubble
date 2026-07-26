@@ -1,0 +1,13 @@
+node_modules
+dist
+dist-ssr
+*.local
+*.log
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+
+# Runtime config. Never committed: a local copy may hold a real PAT for fast
+# iteration, and the deployed copy is generated blank by CI. Start from
+# app-config.example.json.
+public/config/app-config.json

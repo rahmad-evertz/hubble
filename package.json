@@ -1,0 +1,41 @@
+{
+  "name": "hubble",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "A personal GitHub dashboard for any user in any organisation",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "ci:check": "npm run format:check && npm run lint && npm run typecheck"
+  },
+  "dependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "//security": "npm audit reports a brace-expansion DoS (<=5.0.7) reaching us through ESLint's minimatch@3. It is accepted, not ignored: it is a devDependency that never ships to the browser, and it is only reachable by linting adversarial glob patterns. It cannot currently be fixed -- brace-expansion@5 changed its export shape, so overriding it to a patched release breaks minimatch@3 with 'expand is not a function', and `npm audit fix --force` resolves it only by downgrading ESLint. Re-check when ESLint drops minimatch@3.",
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "eslint": "^9.0.0",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "eslint-plugin-react-refresh": "^0.4.0",
+    "globals": "^15.0.0",
+    "prettier": "^3.0.0",
+    "typescript": "^5.6.0",
+    "typescript-eslint": "^8.0.0",
+    "vite": "^7.0.0",
+    "vitest": "^3.0.0"
+  }
+}
