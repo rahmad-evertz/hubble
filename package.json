@@ -25,6 +25,7 @@
   "//security": "npm audit reports a brace-expansion DoS (<=5.0.7) reaching us through ESLint's minimatch@3. It is accepted, not ignored: it is a devDependency that never ships to the browser, and it is only reachable by linting adversarial glob patterns. It cannot currently be fixed -- brace-expansion@5 changed its export shape, so overriding it to a patched release breaks minimatch@3 with 'expand is not a function', and `npm audit fix --force` resolves it only by downgrading ESLint. Re-check when ESLint drops minimatch@3.",
   "devDependencies": {
     "@eslint/js": "^9.0.0",
+    "@types/node": "^26.1.1",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^5.0.0",

@@ -19,7 +19,11 @@
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",
     "resolveJsonModule": true,
-    "types": ["vite/client"]
+    // `node` is required because vite.config.ts reads process.env, and it is
+    // declared rather than inherited: without it, CI fails on a clean install
+    // while a developer's machine can silently borrow @types/node from a parent
+    // directory's node_modules and appear to pass.
+    "types": ["vite/client", "node"]
   },
   "include": ["src", "vite.config.ts"]
 }
