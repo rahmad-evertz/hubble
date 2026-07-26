@@ -128,7 +128,13 @@ export async function rest<T>(
     throw new GitHubError(`GitHub responded ${res.status} ${res.statusText}.`, res.status)
   }
 
-  return { data: (await res.json()) as T, status: res.status, headers: res.headers }
+  // Write endpoints answer 202/204/205 with no body at all, so parsing
+  // unconditionally would turn a success into a JSON syntax error.
+  const isJson = (res.headers.get('Content-Type') ?? '').includes('json')
+  const bodyless = res.status === 202 || res.status === 204 || res.status === 205
+  const data = bodyless || !isJson ? null : ((await res.json()) as T)
+
+  return { data, status: res.status, headers: res.headers }
 }
 
 /** Follow RFC 5988 pagination. Requires `Link` to be CORS-exposed, which it is. */

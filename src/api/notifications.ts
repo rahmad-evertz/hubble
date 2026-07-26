@@ -1,5 +1,5 @@
 import type { NotificationItem } from '../types'
-import { graphql, nextLink, pollIntervalSeconds, rest, type Credentials } from './client'
+import { AuthError, graphql, nextLink, pollIntervalSeconds, rest, type Credentials } from './client'
 
 /** GitHub has no GraphQL notifications API, so this half of the app is REST. */
 const PER_PAGE = 50
@@ -153,6 +153,50 @@ async function resolveSubjects(
     if (node) out.set(key, { url: node.url, isBot: node.author?.__typename === 'Bot' })
   })
   return out
+}
+
+export type MarkResult = {
+  markedIds: string[]
+  failures: { id: string; message: string }[]
+}
+
+/** Enough parallelism to feel instant, low enough to stay polite. */
+const MARK_CONCURRENCY = 6
+
+/**
+ * Marks specific threads as read, one request each.
+ *
+ * Deliberately *not* `PUT /notifications`. That endpoint marks everything read
+ * across every organisation, which would silently ignore the org filter the user
+ * is looking at and irreversibly clear notifications they never saw. GitHub
+ * offers no org-scoped bulk equivalent, so precision costs one request per
+ * thread — cheap against the 5,000/hour REST budget and worth it.
+ *
+ * Partial failure is reported rather than thrown: if 118 of 123 succeed, the
+ * caller needs to know which five did not.
+ */
+export async function markThreadsRead(ids: string[], creds: Credentials): Promise<MarkResult> {
+  const queue = [...ids]
+  const markedIds: string[] = []
+  const failures: { id: string; message: string }[] = []
+
+  async function worker(): Promise<void> {
+    for (;;) {
+      const id = queue.shift()
+      if (id === undefined) return
+      try {
+        await rest(`/notifications/threads/${encodeURIComponent(id)}`, creds, { method: 'PATCH' })
+        markedIds.push(id)
+      } catch (error) {
+        // An AuthError still has to reach the caller so the app can re-auth.
+        if (error instanceof AuthError) throw error
+        failures.push({ id, message: error instanceof Error ? error.message : String(error) })
+      }
+    }
+  }
+
+  await Promise.all(Array.from({ length: Math.min(MARK_CONCURRENCY, ids.length) }, () => worker()))
+  return { markedIds, failures }
 }
 
 /** Reasons ordered by how much they usually demand of you. */

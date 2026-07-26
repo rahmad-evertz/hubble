@@ -9,11 +9,21 @@ type Props = {
   available: boolean
   viewerLogin: string
   username: string
+  marking: boolean
+  onMarkRead: (ids: string[]) => void
 }
 
-export default function NotificationInbox({ items, available, viewerLogin, username }: Props) {
+export default function NotificationInbox({
+  items,
+  available,
+  viewerLogin,
+  username,
+  marking,
+  onMarkRead,
+}: Props) {
   const [hideBots, setHideBots] = useState(false)
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
+  const [confirmingBulk, setConfirmingBulk] = useState(false)
 
   const botCount = useMemo(() => items.filter((i) => i.isBot).length, [items])
 
@@ -33,6 +43,9 @@ export default function NotificationInbox({ items, available, viewerLogin, usern
       ([a], [b]) => reasonRank(a) - reasonRank(b) || a.localeCompare(b),
     )
   }, [items, hideBots])
+
+  /** Only what is currently on screen — never the whole account. */
+  const shownIds = useMemo(() => groups.flatMap(([, list]) => list.map((i) => i.id)), [groups])
 
   if (!available) {
     return (
@@ -61,8 +74,45 @@ export default function NotificationInbox({ items, available, viewerLogin, usern
         <span className="note">grouped by why GitHub notified you</span>
         <div style={{ flex: 1 }} />
         {botCount > 0 && (
-          <button className="btn btn-sm btn-ghost" onClick={() => setHideBots((v) => !v)}>
+          <button
+            className="btn btn-sm btn-ghost"
+            disabled={marking}
+            onClick={() => setHideBots((v) => !v)}
+          >
             {hideBots ? `Show bots (${botCount})` : `Hide bots (${botCount})`}
+          </button>
+        )}
+        {/* Two-step, because marking read cannot be undone from the API and the
+            count can be in the hundreds. The label names the exact scope so it
+            can never be mistaken for "mark my whole account read". */}
+        {confirmingBulk ? (
+          <>
+            <span className="note">Mark {shownIds.length} shown as read?</span>
+            <button
+              className="btn btn-sm btn-primary"
+              disabled={marking}
+              onClick={() => {
+                onMarkRead(shownIds)
+                setConfirmingBulk(false)
+              }}
+            >
+              {marking ? 'Marking…' : 'Confirm'}
+            </button>
+            <button
+              className="btn btn-sm btn-ghost"
+              disabled={marking}
+              onClick={() => setConfirmingBulk(false)}
+            >
+              Cancel
+            </button>
+          </>
+        ) : (
+          <button
+            className="btn btn-sm"
+            disabled={marking || shownIds.length === 0}
+            onClick={() => setConfirmingBulk(true)}
+          >
+            Mark {shownIds.length} shown as read
           </button>
         )}
       </div>
@@ -71,15 +121,25 @@ export default function NotificationInbox({ items, available, viewerLogin, usern
         const isCollapsed = collapsed[reason] ?? false
         return (
           <div className="inbox-group" key={reason}>
-            <button
-              className="inbox-group-head"
-              aria-expanded={!isCollapsed}
-              onClick={() => setCollapsed((prev) => ({ ...prev, [reason]: !isCollapsed }))}
-            >
-              <span className="chevron">{isCollapsed ? '▸' : '▾'}</span>
-              {reasonLabel(reason)}
-              <span className="tab-count">{list.length}</span>
-            </button>
+            <div className="inbox-group-bar">
+              <button
+                className="inbox-group-head"
+                aria-expanded={!isCollapsed}
+                onClick={() => setCollapsed((prev) => ({ ...prev, [reason]: !isCollapsed }))}
+              >
+                <span className="chevron">{isCollapsed ? '▸' : '▾'}</span>
+                {reasonLabel(reason)}
+                <span className="tab-count">{list.length}</span>
+              </button>
+              <button
+                className="btn btn-sm btn-ghost"
+                disabled={marking}
+                title={`Mark all ${list.length} ${reasonLabel(reason).toLowerCase()} notifications as read`}
+                onClick={() => onMarkRead(list.map((i) => i.id))}
+              >
+                Mark {list.length} read
+              </button>
+            </div>
 
             {!isCollapsed &&
               list.map((item) => (
@@ -101,6 +161,17 @@ export default function NotificationInbox({ items, available, viewerLogin, usern
                     )}
                   </span>
                   <span className="when">{relativeAge(item.updatedAt)}</span>
+                  {/* Single row: no confirmation. One notification is a small,
+                      routine action, unlike the bulk paths above. */}
+                  <button
+                    className="btn btn-sm btn-ghost inbox-mark"
+                    disabled={marking}
+                    aria-label={`Mark "${item.title}" as read`}
+                    title="Mark as read"
+                    onClick={() => onMarkRead([item.id])}
+                  >
+                    ✓
+                  </button>
                 </div>
               ))}
           </div>

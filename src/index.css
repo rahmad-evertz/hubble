@@ -480,13 +480,21 @@ table.prs tbody tr:last-child td {
   border-bottom: none;
 }
 
+.inbox-group-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-right: 10px;
+  background: var(--bg-subtle);
+}
+
 .inbox-group-head {
   display: flex;
   align-items: center;
   gap: 8px;
-  width: 100%;
+  flex: 1;
   padding: 9px 14px;
-  background: var(--bg-subtle);
+  background: none;
   border: none;
   text-align: left;
   font-size: 13px;
@@ -532,6 +540,19 @@ table.prs tbody tr:last-child td {
   flex: 0 0 auto;
   color: var(--fg-subtle);
   font-size: 12px;
+}
+
+/* Kept visible rather than revealed on hover: a hover-only control is
+   unreachable on touch and invisible to keyboard users. */
+.inbox-mark {
+  flex: 0 0 auto;
+  padding: 0 7px;
+  color: var(--fg-subtle);
+  line-height: 1.4;
+}
+.inbox-mark:hover:not(:disabled) {
+  color: var(--success);
+  background: transparent;
 }
 
 /* ----------------------------------------------------------------- stats --- */

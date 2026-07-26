@@ -191,6 +191,8 @@ export default function App() {
             available={inboxAvailable}
             viewerLogin={viewerLogin ?? '—'}
             username={config.username}
+            marking={notifications.marking}
+            onMarkRead={(ids) => void notifications.markRead(ids)}
           />
         )}
 
