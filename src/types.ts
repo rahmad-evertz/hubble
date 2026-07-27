@@ -66,6 +66,11 @@ export type PanelResult = {
 
 export type Panels = Record<PanelKey, PanelResult>
 
+export type PanelsData = {
+  panels: Panels
+  all: PullRequest[]
+}
+
 export type NotificationItem = {
   id: string
   reason: string
@@ -101,3 +106,83 @@ export type Stats = {
   }
   topRepos: RepoCount[]
 }
+
+export type ReviewEvent = 'APPROVE' | 'REQUEST_CHANGES' | 'COMMENT'
+
+export type PrState = 'OPEN' | 'CLOSED' | 'MERGED'
+
+export type DiffSide = 'LEFT' | 'RIGHT' | null
+
+export type PrFileStatus =
+  'added' | 'removed' | 'modified' | 'renamed' | 'copied' | 'changed' | 'unchanged'
+
+export type PrFile = {
+  path: string
+  previousPath: string | null
+  status: PrFileStatus
+  additions: number
+  deletions: number
+  changes: number
+  /** null when GitHub omitted it (binary file, or diff too large) */
+  patch: string | null
+  blobUrl: string
+}
+
+export type CommentAuthor = { login: string | null; avatarUrl: string | null }
+
+export type ReviewComment = {
+  id: string
+  body: string
+  author: CommentAuthor
+  createdAt: string
+  url: string
+}
+
+export type ReviewThread = {
+  id: string
+  isResolved: boolean
+  isOutdated: boolean
+  path: string
+  line: number | null
+  originalLine: number | null
+  diffSide: DiffSide
+  comments: ReviewComment[]
+  hasMoreComments: boolean
+}
+
+export type ReviewSummary = {
+  id: string
+  state: ReviewState
+  body: string
+  author: { login: string | null }
+  submittedAt: string | null
+}
+
+export type PrDetailCore = {
+  id: string
+  number: number
+  title: string
+  body: string
+  url: string
+  state: PrState
+  isDraft: boolean
+  baseRefName: string
+  headRefName: string
+  mergeable: Mergeable
+  reviewDecision: ReviewDecision
+  repo: string
+}
+
+export type PrDetail = PrDetailCore & {
+  reviewThreads: ReviewThread[]
+  threadsTruncated: boolean
+  comments: ReviewComment[]
+  commentsTruncated: boolean
+  reviews: ReviewSummary[]
+  reviewsTruncated: boolean
+}
+
+export type PrMutationEffect =
+  | { type: 'review'; userLatestReview: ReviewState }
+  | { type: 'draft'; isDraft: boolean }
+  | { type: 'closed' }

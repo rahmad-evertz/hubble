@@ -995,6 +995,381 @@ table.data th {
   font-weight: 600;
 }
 
+/* ---------------------------------------------------------- pr detail modal --- */
+
+.modal-lg {
+  max-width: 1100px;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 80px);
+}
+
+.modal-lg .modal-body {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.pr-detail-title {
+  flex: 1;
+}
+
+.pr-detail-title h2 {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.pr-detail-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--fg-muted);
+  margin-top: 2px;
+}
+
+.pr-actions-bar {
+  display: flex;
+  gap: 8px;
+  padding: 14px 18px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-subtle);
+}
+
+.action-composer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.action-composer textarea {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--mono);
+  font-size: 13px;
+  resize: vertical;
+  min-height: 80px;
+}
+
+.action-choice {
+  display: flex;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.action-choice label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.action-choice input {
+  cursor: pointer;
+}
+
+.pr-files-summary {
+  padding: 10px 0;
+  margin: 0 0 10px;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 13px;
+  color: var(--fg-muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-success {
+  background: var(--success);
+  border-color: transparent;
+  color: #fff;
+}
+
+.btn-success:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.btn-danger {
+  background: var(--danger);
+  border-color: transparent;
+  color: #fff;
+}
+
+.btn-danger:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+/* ------------------------------------------------ diff file and comments --- */
+
+.diff-file {
+  margin-bottom: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.diff-file-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--bg-inset);
+  border-bottom: 1px solid var(--border-subtle);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.diff-file-head .chevron {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--fg-muted);
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.diff-file-path {
+  flex: 1;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--fg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.diff-file-stats {
+  display: flex;
+  gap: 4px;
+  font-size: 11px;
+}
+
+.diff-file-body {
+  overflow-x: auto;
+}
+
+.diff-file-empty {
+  padding: 20px;
+  text-align: center;
+  color: var(--fg-muted);
+  font-size: 13px;
+}
+
+.diff-file-empty p {
+  margin: 0 0 8px;
+}
+
+.diff-file-empty a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.diff-file-empty a:hover {
+  text-decoration: underline;
+}
+
+table.diff {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--mono);
+  font-size: 12px;
+  background: var(--bg);
+}
+
+table.diff td {
+  padding: 0;
+  border: none;
+  vertical-align: top;
+  line-height: 1.5;
+}
+
+.diff-gutter {
+  width: 40px;
+  padding: 0 6px;
+  text-align: right;
+  background: var(--bg-inset);
+  color: var(--fg-subtle);
+  user-select: none;
+  border-right: 1px solid var(--border-subtle);
+}
+
+.diff-sign {
+  width: 24px;
+  padding: 0 4px;
+  text-align: center;
+  color: var(--fg-subtle);
+  user-select: none;
+  border-right: 1px solid var(--border-subtle);
+}
+
+.diff-content {
+  padding: 0 6px;
+  word-break: break-all;
+  white-space: pre-wrap;
+}
+
+.diff-content code {
+  color: var(--fg);
+}
+
+.diff-line-add {
+  background: color-mix(in srgb, var(--success-bg) 30%, var(--bg));
+}
+
+.diff-line-del {
+  background: color-mix(in srgb, var(--danger-bg) 30%, var(--bg));
+}
+
+.diff-hunk-head {
+  background: var(--bg-subtle);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.diff-hunk-header {
+  padding: 2px 6px;
+  color: var(--fg-muted);
+  font-weight: 500;
+  font-size: 11px;
+}
+
+.diff-thread-row {
+  display: contents;
+}
+
+.comment-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--bg-inset);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.comment {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.comment-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+}
+
+.comment-author {
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.comment-time {
+  color: var(--fg-muted);
+}
+
+.comment-body {
+  background: var(--bg);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  padding: 6px;
+  font-family: var(--mono);
+  font-size: 12px;
+  overflow-x: auto;
+}
+
+.comment-body pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-all;
+  color: var(--fg);
+}
+
+.comment-body a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.comment-body a:hover {
+  text-decoration: underline;
+}
+
+.comment-reply {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.comment-reply textarea {
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--mono);
+  font-size: 12px;
+  resize: vertical;
+  min-height: 60px;
+}
+
+.thread-resolved-bar {
+  padding: 4px 6px;
+  background: var(--success-bg);
+  color: var(--success);
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.diff-orphaned-threads {
+  margin-top: 10px;
+}
+
+.pr-conversation {
+  margin-top: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.pr-review-summary {
+  padding: 10px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.pr-review-summary:last-child {
+  border-bottom: none;
+}
+
+.pr-review-summary .comment-head {
+  margin-bottom: 6px;
+}
+
+.pr-review-summary .comment-body {
+  background: var(--bg);
+}
+
+table.prs tbody tr {
+  cursor: pointer;
+}
+
+table.prs tbody tr:hover {
+  background: var(--bg-subtle);
+}
+
+table.prs tbody tr:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
 /* ------------------------------------------------------------ responsive --- */
 
 @media (max-width: 1000px) {

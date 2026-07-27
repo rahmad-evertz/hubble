@@ -29,9 +29,10 @@ type Props = {
   config: AppConfig
   emptyTitle: string
   emptyBody: string
+  onOpen?: (pr: PullRequest) => void
 }
 
-export default function PrTable({ prs, config, emptyTitle, emptyBody }: Props) {
+export default function PrTable({ prs, config, emptyTitle, emptyBody, onOpen }: Props) {
   if (prs.length === 0) {
     return (
       <div className="empty">
@@ -60,7 +61,7 @@ export default function PrTable({ prs, config, emptyTitle, emptyBody }: Props) {
         </thead>
         <tbody>
           {prs.map((pr) => (
-            <Row key={pr.id} pr={pr} config={config} />
+            <Row key={pr.id} pr={pr} config={config} onOpen={onOpen} />
           ))}
         </tbody>
       </table>
@@ -68,7 +69,15 @@ export default function PrTable({ prs, config, emptyTitle, emptyBody }: Props) {
   )
 }
 
-function Row({ pr, config }: { pr: PullRequest; config: AppConfig }) {
+function Row({
+  pr,
+  config,
+  onOpen,
+}: {
+  pr: PullRequest
+  config: AppConfig
+  onOpen?: (pr: PullRequest) => void
+}) {
   const ageDays = daysSince(pr.createdAt)
   const ticket = extractTicket(pr.title, config.ticketPattern)
   const review = pr.reviewDecision ? REVIEW_BADGE[pr.reviewDecision] : null
@@ -76,13 +85,30 @@ function Row({ pr, config }: { pr: PullRequest; config: AppConfig }) {
   const [, repoName] = pr.repo.split('/')
 
   return (
-    <tr>
+    <tr
+      onClick={() => onOpen?.(pr)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onOpen?.(pr)
+        }
+      }}
+      tabIndex={0}
+      role="button"
+      style={{ cursor: onOpen ? 'pointer' : 'default' }}
+    >
       <td className="cell-repo" title={pr.repo}>
         {repoName ?? pr.repo}
       </td>
       <td className="cell-num">{pr.number}</td>
       <td className="cell-title">
-        <a className="pr-title" href={pr.url} target="_blank" rel="noreferrer">
+        <a
+          className="pr-title"
+          href={pr.url}
+          target="_blank"
+          rel="noreferrer"
+          onClick={(e) => e.stopPropagation()}
+        >
           {pr.title}
         </a>
         <div className="pr-sub">
@@ -96,7 +122,12 @@ function Row({ pr, config }: { pr: PullRequest; config: AppConfig }) {
           )}
           {ownReview && <span>{ownReview}</span>}
           {ticket && config.ticketBaseUrl && (
-            <a href={ticketUrl(ticket, config.ticketBaseUrl)} target="_blank" rel="noreferrer">
+            <a
+              href={ticketUrl(ticket, config.ticketBaseUrl)}
+              target="_blank"
+              rel="noreferrer"
+              onClick={(e) => e.stopPropagation()}
+            >
               {ticket}
             </a>
           )}

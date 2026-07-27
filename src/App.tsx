@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AuthError, type Credentials } from './api/client'
 import { fetchViewer } from './api/identity'
-import { fetchPanels, PANEL_KEYS } from './api/prs'
+import { fetchPanels, PANEL_KEYS, patchPanelsPr, removePanelsPr } from './api/prs'
 import { fetchStats } from './api/stats'
 import Header from './components/Header'
 import NotificationInbox from './components/NotificationInbox'
 import PrTable from './components/PrTable'
+import PrDetailModal from './components/PrDetailModal'
 import RateLimitFooter from './components/RateLimitFooter'
 import Settings from './components/Settings'
 import SetupScreen from './components/SetupScreen'
@@ -16,7 +17,7 @@ import { useNotifications } from './hooks/useNotifications'
 import { useTheme } from './hooks/useTheme'
 import { BLANK_CONFIG, clearConfig, isConfigured, loadConfig, saveConfig } from './lib/config'
 import * as storage from './lib/storage'
-import type { AppConfig, PanelKey } from './types'
+import type { AppConfig, PanelKey, PrMutationEffect } from './types'
 
 type TabKey = PanelKey | 'inbox' | 'stats'
 
@@ -53,6 +54,7 @@ export default function App() {
   const [viewerLogin, setViewerLogin] = useState<string | null>(null)
   /** Stats cost a request, so they are not fetched until the tab is first opened. */
   const [statsRequested, setStatsRequested] = useState(() => initialTab() === 'stats')
+  const [selectedPrId, setSelectedPrId] = useState<string | null>(null)
 
   useEffect(() => {
     void loadConfig().then(setConfig)
@@ -91,6 +93,26 @@ export default function App() {
   const stats = useAsync(() => fetchStats(queryCtx, creds), scopeKey, ready && statsRequested)
   const inboxAvailable = viewerLogin !== null && viewerLogin === queryCtx.username
   const notifications = useNotifications(creds, queryCtx.org, ready && inboxAvailable)
+
+  const selectedPr = selectedPrId
+    ? (panels.data?.all.find((p) => p.id === selectedPrId) ?? null)
+    : null
+
+  const handlePrMutated = useCallback(
+    (prId: string, effect: PrMutationEffect) => {
+      if (effect.type === 'closed') {
+        panels.mutate((prev) => removePanelsPr(prev, prId))
+      } else if (effect.type === 'review') {
+        panels.mutate((prev) =>
+          patchPanelsPr(prev, prId, { userLatestReview: effect.userLatestReview }),
+        )
+      } else {
+        panels.mutate((prev) => patchPanelsPr(prev, prId, { isDraft: effect.isDraft }))
+      }
+      panels.refresh()
+    },
+    [panels],
+  )
 
   const refreshAll = useCallback(() => {
     panels.refresh()
@@ -179,6 +201,7 @@ export default function App() {
                 config={config}
                 emptyTitle={EMPTY_COPY[tab as PanelKey].title}
                 emptyBody={EMPTY_COPY[tab as PanelKey].body}
+                onOpen={(pr) => setSelectedPrId(pr.id)}
               />
             </div>
           ) : (
@@ -220,6 +243,17 @@ export default function App() {
           }}
           onSignOut={signOut}
           onClose={() => setShowSettings(false)}
+        />
+      )}
+
+      {selectedPr && (
+        <PrDetailModal
+          key={selectedPr.id}
+          pr={selectedPr}
+          creds={creds}
+          viewerLogin={viewerLogin}
+          onClose={() => setSelectedPrId(null)}
+          onMutated={handlePrMutated}
         />
       )}
     </div>

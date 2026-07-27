@@ -188,3 +188,34 @@ export async function fetchPanels(
 
   return { panels, all: [...byId.values()] }
 }
+
+export function patchPanelsPr(
+  data: PanelsData | null,
+  id: string,
+  patch: Partial<PullRequest>,
+): PanelsData | null {
+  if (!data) return data
+  const panels = {} as Panels
+  for (const key of PANEL_KEYS) {
+    panels[key] = {
+      ...data.panels[key],
+      prs: data.panels[key].prs.map((pr) => (pr.id === id ? { ...pr, ...patch } : pr)),
+    }
+  }
+  return { panels, all: data.all.map((pr) => (pr.id === id ? { ...pr, ...patch } : pr)) }
+}
+
+export function removePanelsPr(data: PanelsData | null, id: string): PanelsData | null {
+  if (!data) return data
+  const panels = {} as Panels
+  for (const key of PANEL_KEYS) {
+    const prs = data.panels[key].prs.filter((pr) => pr.id !== id)
+    const dropped = prs.length < data.panels[key].prs.length
+    panels[key] = {
+      ...data.panels[key],
+      prs,
+      total: dropped ? Math.max(0, data.panels[key].total - 1) : data.panels[key].total,
+    }
+  }
+  return { panels, all: data.all.filter((pr) => pr.id !== id) }
+}

@@ -7,7 +7,10 @@ export type AsyncState<T> = {
   updatedAt: Date | null
 }
 
-export type AsyncResource<T> = AsyncState<T> & { refresh: () => void }
+export type AsyncResource<T> = AsyncState<T> & {
+  refresh: () => void
+  mutate: (updater: (prev: T | null) => T | null) => void
+}
 
 /**
  * One fetch-with-refresh, shared by the panels and stats.
@@ -29,6 +32,9 @@ export function useAsync<T>(
   })
   const [nonce, setNonce] = useState(0)
   const refresh = useCallback(() => setNonce((n) => n + 1), [])
+  const mutate = useCallback((updater: (prev: T | null) => T | null) => {
+    setState((s) => ({ ...s, data: updater(s.data) }))
+  }, [])
 
   useEffect(() => {
     if (!enabled) return
@@ -51,5 +57,5 @@ export function useAsync<T>(
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `key` stands in for `load`.
   }, [key, enabled, nonce])
 
-  return { ...state, refresh }
+  return { ...state, refresh, mutate }
 }
