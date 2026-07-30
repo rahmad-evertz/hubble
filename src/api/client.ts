@@ -52,16 +52,28 @@ const AUTH_HINT =
 const RETRY_STATUSES = new Set([502, 503, 504])
 
 async function fetchWithRetry(url: string, init: RequestInit, attempts = 3): Promise<Response> {
-  let last: Response | undefined
+  let lastResponse: Response | undefined
+  let lastError: unknown
+
   for (let attempt = 0; attempt < attempts; attempt++) {
-    const res = await fetch(url, init)
-    if (!RETRY_STATUSES.has(res.status)) return res
-    last = res
+    try {
+      const res = await fetch(url, init)
+      if (!RETRY_STATUSES.has(res.status)) return res
+      lastResponse = res
+    } catch (error) {
+      // fetch() itself throws (rather than resolving with a bad status) on
+      // network-level failures — dropped wifi, DNS hiccups, a connection reset
+      // mid-flight. Those are exactly as transient as a 502, so retry them too;
+      // otherwise a single blip surfaces as an unretried "Failed to fetch".
+      lastError = error
+    }
     if (attempt < attempts - 1) {
       await new Promise((resolve) => setTimeout(resolve, 600 * 2 ** attempt))
     }
   }
-  return last as Response
+
+  if (lastResponse) return lastResponse
+  throw lastError
 }
 
 type GraphQLBody<T> = {
