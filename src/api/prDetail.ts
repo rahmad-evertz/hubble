@@ -115,12 +115,6 @@ mutation SubmitReview($pullRequestId: ID!, $event: PullRequestReviewEvent!, $bod
       submittedAt
     }
   }
-  rateLimit {
-    cost
-    remaining
-    limit
-    resetAt
-  }
 }
 `
 
@@ -137,12 +131,6 @@ mutation ReplyToThread($threadId: ID!, $body: String!) {
       createdAt
       url
     }
-  }
-  rateLimit {
-    cost
-    remaining
-    limit
-    resetAt
   }
 }
 `
@@ -163,12 +151,6 @@ mutation AddComment($subjectId: ID!, $body: String!) {
       }
     }
   }
-  rateLimit {
-    cost
-    remaining
-    limit
-    resetAt
-  }
 }
 `
 
@@ -180,12 +162,6 @@ mutation ClosePr($pullRequestId: ID!) {
       state
     }
   }
-  rateLimit {
-    cost
-    remaining
-    limit
-    resetAt
-  }
 }
 `
 
@@ -196,12 +172,6 @@ mutation MarkReady($pullRequestId: ID!) {
       isDraft
     }
   }
-  rateLimit {
-    cost
-    remaining
-    limit
-    resetAt
-  }
 }
 `
 
@@ -211,12 +181,6 @@ mutation ConvertToDraft($pullRequestId: ID!) {
     pullRequest {
       isDraft
     }
-  }
-  rateLimit {
-    cost
-    remaining
-    limit
-    resetAt
   }
 }
 `
