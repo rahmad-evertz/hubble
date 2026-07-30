@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { patchPanelsPr, removePanelsPr } from './prs'
+import { combinePanelPrs, patchPanelsPr, removePanelsPr } from './prs'
 import type { PanelsData, PullRequest, PrRole } from '../types'
 
 function makePr(id: string, roles: PrRole[] = []): PullRequest {
@@ -110,5 +110,38 @@ describe('removePanelsPr', () => {
 
   it('returns null when data is null', () => {
     expect(removePanelsPr(null, 'pr-1')).toBeNull()
+  })
+})
+
+describe('combinePanelPrs', () => {
+  it('unions PRs across the given panels', () => {
+    const pr1 = makePr('pr-1', ['author'])
+    const pr2 = makePr('pr-2', ['assignee'])
+    const data = makePanelsData([pr1, pr2])
+    const combined = combinePanelPrs(data, ['mine', 'assigned'])
+
+    expect(combined.map((p) => p.id)).toEqual(['pr-1', 'pr-2'])
+  })
+
+  it('dedupes a PR that appears in both panels, keeping it once', () => {
+    const pr1 = makePr('pr-1', ['author', 'assignee'])
+    const pr2 = makePr('pr-2', ['assignee'])
+    const data = makePanelsData([pr1, pr2])
+    const combined = combinePanelPrs(data, ['mine', 'assigned'])
+
+    expect(combined.map((p) => p.id)).toEqual(['pr-1', 'pr-2'])
+  })
+
+  it('excludes panels not named in keys', () => {
+    const pr1 = makePr('pr-1', ['author'])
+    const pr2 = makePr('pr-2', ['reviewer'])
+    const data = makePanelsData([pr1, pr2])
+    const combined = combinePanelPrs(data, ['mine', 'assigned'])
+
+    expect(combined.map((p) => p.id)).toEqual(['pr-1'])
+  })
+
+  it('returns an empty array when data is null', () => {
+    expect(combinePanelPrs(null, ['mine', 'assigned'])).toEqual([])
   })
 })

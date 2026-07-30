@@ -192,6 +192,25 @@ export async function fetchPanels(
   return { panels, all: [...byId.values()] }
 }
 
+/**
+ * Dedupes across panels for display. Each PR's `roles` is already unioned
+ * across all four panels above, so no role-merging is needed here — just
+ * one pass keeping first-seen order across the given keys.
+ */
+export function combinePanelPrs(data: PanelsData | null, keys: PanelKey[]): PullRequest[] {
+  if (!data) return []
+  const seen = new Set<string>()
+  const out: PullRequest[] = []
+  for (const key of keys) {
+    for (const pr of data.panels[key].prs) {
+      if (seen.has(pr.id)) continue
+      seen.add(pr.id)
+      out.push(pr)
+    }
+  }
+  return out
+}
+
 export function patchPanelsPr(
   data: PanelsData | null,
   id: string,

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AuthError, type Credentials } from './api/client'
 import { fetchViewer } from './api/identity'
-import { fetchPanels, PANEL_KEYS, patchPanelsPr, removePanelsPr } from './api/prs'
+import { combinePanelPrs, fetchPanels, PANEL_KEYS, patchPanelsPr, removePanelsPr } from './api/prs'
 import { fetchStats } from './api/stats'
 import Header from './components/Header'
 import NotificationInbox from './components/NotificationInbox'
@@ -21,17 +21,22 @@ import type { AppConfig, PanelKey, PrMutationEffect } from './types'
 
 type TabKey = PanelKey | 'inbox' | 'stats'
 
+/** 'mine' now covers both authored and assigned PRs — see combinePanelPrs below. */
 const TABS: { key: TabKey; label: string }[] = [
   { key: 'mine', label: 'My PRs' },
   { key: 'requested', label: 'To review' },
-  { key: 'assigned', label: 'Assigned' },
   { key: 'mentioned', label: 'Mentioned' },
   { key: 'inbox', label: 'Inbox' },
   { key: 'stats', label: 'Stats' },
 ]
 
+const MINE_PANELS: PanelKey[] = ['mine', 'assigned']
+
 const EMPTY_COPY: Record<PanelKey, { title: string; body: string }> = {
-  mine: { title: 'No open pull requests', body: 'Nothing you have authored is currently open.' },
+  mine: {
+    title: 'No open pull requests',
+    body: 'Nothing you have authored or are assigned to is currently open.',
+  },
   requested: {
     title: 'No reviews waiting on you',
     body: 'Nobody has requested your review in this scope.',
@@ -197,7 +202,11 @@ export default function App() {
           (panels.data ? (
             <div className="card">
               <PrTable
-                prs={panels.data.panels[tab as PanelKey].prs}
+                prs={
+                  tab === 'mine'
+                    ? combinePanelPrs(panels.data, MINE_PANELS)
+                    : panels.data.panels[tab as PanelKey].prs
+                }
                 config={config}
                 emptyTitle={EMPTY_COPY[tab as PanelKey].title}
                 emptyBody={EMPTY_COPY[tab as PanelKey].body}
@@ -271,6 +280,9 @@ function Count({
 }) {
   if (tabKey === 'stats') return null
   if (tabKey === 'inbox') return unread > 0 ? <span className="tab-count">{unread}</span> : null
-  const total = panels?.panels[tabKey as PanelKey].total
+  const total =
+    tabKey === 'mine'
+      ? (panels?.panels.mine.total ?? 0) + (panels?.panels.assigned.total ?? 0)
+      : panels?.panels[tabKey as PanelKey].total
   return total ? <span className="tab-count">{total}</span> : null
 }
