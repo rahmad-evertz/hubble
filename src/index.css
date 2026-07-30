@@ -46,6 +46,7 @@
     --purple: #ab7df8;
     --purple-bg: #1d1b2e;
     --shadow: 0 1px 3px rgb(1 4 9 / 60%), 0 8px 24px rgb(1 4 9 / 40%);
+    --shadow-lg: 0 2px 6px rgb(1 4 9 / 55%), 0 12px 32px rgb(1 4 9 / 45%);
     color-scheme: dark;
   }
 }
@@ -93,6 +94,10 @@
   --warning-bg: #241d11;
   --purple: #ab7df8;
   --purple-bg: #1d1b2e;
+  /* Only the dark tier redeclares --shadow/--shadow-lg: the light-mode value
+     from :root is already correct here and doesn't need restating. */
+  --shadow: 0 1px 3px rgb(1 4 9 / 60%), 0 8px 24px rgb(1 4 9 / 40%);
+  --shadow-lg: 0 2px 6px rgb(1 4 9 / 55%), 0 12px 32px rgb(1 4 9 / 45%);
   color-scheme: dark;
 }
 
@@ -1368,6 +1373,72 @@ table.prs tbody tr:hover {
 table.prs tbody tr:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: -1px;
+}
+
+/* ------------------------------------------------- dark-mode refinements --- */
+
+/* Everything below is scoped to dark mode only (explicit toggle or OS
+   preference) — light mode is untouched by any rule in this section.
+   Restrained on purpose: extra depth and a blurred scrim on the two overlay
+   surfaces (modals, the setup card), plus short transitions on the controls
+   that already change on hover/focus, rather than a wholesale restyle. */
+
+:root[data-theme='dark'] .modal,
+:root[data-theme='dark'] .setup-card {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 96%, white 4%), var(--bg));
+  box-shadow: var(--shadow-lg);
+}
+
+:root[data-theme='dark'] .modal-backdrop {
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+:root[data-theme='dark'] .btn,
+:root[data-theme='dark'] .tab,
+:root[data-theme='dark'] table.prs tbody tr,
+:root[data-theme='dark'] input,
+:root[data-theme='dark'] textarea {
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    filter 150ms ease,
+    box-shadow 150ms ease;
+}
+
+:root[data-theme='dark'] .btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme='light'])) .modal,
+  :root:where(:not([data-theme='light'])) .setup-card {
+    background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 96%, white 4%), var(--bg));
+    box-shadow: var(--shadow-lg);
+  }
+
+  :root:where(:not([data-theme='light'])) .modal-backdrop {
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+
+  :root:where(:not([data-theme='light'])) .btn,
+  :root:where(:not([data-theme='light'])) .tab,
+  :root:where(:not([data-theme='light'])) table.prs tbody tr,
+  :root:where(:not([data-theme='light'])) input,
+  :root:where(:not([data-theme='light'])) textarea {
+    transition:
+      background-color 150ms ease,
+      border-color 150ms ease,
+      filter 150ms ease,
+      box-shadow 150ms ease;
+  }
+
+  :root:where(:not([data-theme='light'])) .btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--accent-bg);
+  }
 }
 
 /* ------------------------------------------------------------ responsive --- */
