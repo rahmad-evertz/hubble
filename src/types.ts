@@ -68,7 +68,12 @@ export type Panels = Record<PanelKey, PanelResult>
 
 export type PanelsData = {
   panels: Panels
+  /** Every distinct PR across all panels, for cross-panel lookups. */
   all: PullRequest[]
+  /** Exact authored ∪ assigned count for the merged "My PRs" tab — server-
+   *  computed, since panels.mine.total + panels.assigned.total double-counts
+   *  a PR that is both. */
+  myPrsTotal: number
 }
 
 export type NotificationItem = {

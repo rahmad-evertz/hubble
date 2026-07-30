@@ -31,6 +31,7 @@ function makePanelsData(prs: PullRequest[]): PanelsData {
   const requested = prs.filter((p) => p.roles.includes('reviewer'))
   const assigned = prs.filter((p) => p.roles.includes('assignee'))
   const mentioned = prs.filter((p) => p.roles.includes('mentioned'))
+  const myPrs = prs.filter((p) => p.roles.includes('author') || p.roles.includes('assignee'))
   return {
     panels: {
       mine: { total: mine.length, prs: mine, hasMore: false },
@@ -39,6 +40,7 @@ function makePanelsData(prs: PullRequest[]): PanelsData {
       mentioned: { total: mentioned.length, prs: mentioned, hasMore: false },
     },
     all: prs,
+    myPrsTotal: myPrs.length,
   }
 }
 
@@ -75,6 +77,14 @@ describe('patchPanelsPr', () => {
   it('returns null when data is null', () => {
     expect(patchPanelsPr(null, 'pr-1', { isDraft: true })).toBeNull()
   })
+
+  it('passes myPrsTotal through unchanged', () => {
+    const pr = makePr('pr-1', ['author'])
+    const data = makePanelsData([pr])
+    const patched = patchPanelsPr(data, 'pr-1', { isDraft: true })
+
+    expect(patched?.myPrsTotal).toBe(data.myPrsTotal)
+  })
 })
 
 describe('removePanelsPr', () => {
@@ -110,6 +120,26 @@ describe('removePanelsPr', () => {
 
   it('returns null when data is null', () => {
     expect(removePanelsPr(null, 'pr-1')).toBeNull()
+  })
+
+  it('decrements myPrsTotal once for a PR that is both authored and assigned', () => {
+    // Regression check: summing panels.mine.total + panels.assigned.total
+    // would double-count this PR instead of the single deduped decrement.
+    const pr1 = makePr('pr-1', ['author', 'assignee'])
+    const pr2 = makePr('pr-2', ['author'])
+    const data = makePanelsData([pr1, pr2])
+    const removed = removePanelsPr(data, 'pr-1')
+
+    expect(removed?.myPrsTotal).toBe(1)
+  })
+
+  it('does not decrement myPrsTotal for a PR that was neither authored nor assigned', () => {
+    const pr1 = makePr('pr-1', ['author'])
+    const pr2 = makePr('pr-2', ['reviewer'])
+    const data = makePanelsData([pr1, pr2])
+    const removed = removePanelsPr(data, 'pr-2')
+
+    expect(removed?.myPrsTotal).toBe(1)
   })
 })
 

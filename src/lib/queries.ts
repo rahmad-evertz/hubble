@@ -36,6 +36,18 @@ export function openPrQueries(ctx: QueryContext): Record<PanelKey, string> {
   }
 }
 
+/**
+ * Exact count for the merged "My PRs" tab (authored ∪ assigned). Summing the
+ * `mine` and `assigned` panel totals double-counts a PR that is both — this
+ * asks GitHub's search index to dedupe instead, via its documented boolean
+ * qualifier syntax, rather than approximating client-side from a page that
+ * may not hold every match.
+ */
+export function myPrsQuery(ctx: QueryContext): string {
+  const { user, scope } = resolve(ctx)
+  return `is:pr is:open${scope} sort:updated-desc (author:${user} OR assignee:${user})`
+}
+
 export type MonthlyQueries = { key: string; merged: string; reviewed: string }
 
 export type StatsQueries = {

@@ -1,9 +1,10 @@
-import { openPrQueries, type QueryContext } from '../lib/queries'
+import { myPrsQuery, openPrQueries, type QueryContext } from '../lib/queries'
 import type {
   CheckState,
   Mergeable,
   PanelKey,
   Panels,
+  PanelsData,
   PrRole,
   PullRequest,
   ReviewDecision,
@@ -66,13 +67,15 @@ query Panels(
   $requested: String!
   $assigned: String!
   $mentioned: String!
+  $myPrs: String!
   $login: String!
   $first: Int!
 ) {
-  mine:      search(query: $mine,      type: ISSUE, first: $first) { ...PrPage }
-  requested: search(query: $requested, type: ISSUE, first: $first) { ...PrPage }
-  assigned:  search(query: $assigned,  type: ISSUE, first: $first) { ...PrPage }
-  mentioned: search(query: $mentioned, type: ISSUE, first: $first) { ...PrPage }
+  mine:       search(query: $mine,      type: ISSUE, first: $first) { ...PrPage }
+  requested:  search(query: $requested, type: ISSUE, first: $first) { ...PrPage }
+  assigned:   search(query: $assigned,  type: ISSUE, first: $first) { ...PrPage }
+  mentioned:  search(query: $mentioned, type: ISSUE, first: $first) { ...PrPage }
+  myPrsTotal: search(query: $myPrs,     type: ISSUE, first: 0)      { issueCount }
   rateLimit { cost remaining limit resetAt }
 }
 ${PR_FRAGMENT}`
@@ -103,7 +106,7 @@ type RawPage = {
   nodes: RawNode[]
 }
 
-type PanelsResponse = Record<PanelKey, RawPage>
+type PanelsResponse = Record<PanelKey, RawPage> & { myPrsTotal?: { issueCount: number } }
 
 /** `type: ISSUE` can return Issues too; non-PR nodes arrive as empty objects. */
 function isPullRequest(node: RawNode): node is RawNode & { id: string } {
@@ -139,12 +142,6 @@ function toPullRequest(node: RawNode & { id: string }, roles: Set<PrRole>): Pull
   }
 }
 
-export type PanelsData = {
-  panels: Panels
-  /** Every distinct PR across all panels, for cross-panel lookups. */
-  all: PullRequest[]
-}
-
 export async function fetchPanels(
   ctx: QueryContext,
   creds: Credentials,
@@ -156,7 +153,7 @@ export async function fetchPanels(
   const queries = openPrQueries(ctx)
   const data = await graphql<PanelsResponse>(
     PANELS_QUERY,
-    { ...queries, login: ctx.username.trim(), first },
+    { ...queries, myPrs: myPrsQuery(ctx), login: ctx.username.trim(), first },
     creds,
   )
 
@@ -189,7 +186,7 @@ export async function fetchPanels(
     }
   }
 
-  return { panels, all: [...byId.values()] }
+  return { panels, all: [...byId.values()], myPrsTotal: data.myPrsTotal?.issueCount ?? 0 }
 }
 
 /**
@@ -224,11 +221,21 @@ export function patchPanelsPr(
       prs: data.panels[key].prs.map((pr) => (pr.id === id ? { ...pr, ...patch } : pr)),
     }
   }
-  return { panels, all: data.all.map((pr) => (pr.id === id ? { ...pr, ...patch } : pr)) }
+  return {
+    panels,
+    all: data.all.map((pr) => (pr.id === id ? { ...pr, ...patch } : pr)),
+    myPrsTotal: data.myPrsTotal,
+  }
 }
 
 export function removePanelsPr(data: PanelsData | null, id: string): PanelsData | null {
   if (!data) return data
+  // The merged "My PRs" tab counts this PR once whether it was in mine,
+  // assigned, or both — check before either panel's list is filtered below.
+  const wasMyPr =
+    data.panels.mine.prs.some((pr) => pr.id === id) ||
+    data.panels.assigned.prs.some((pr) => pr.id === id)
+
   const panels = {} as Panels
   for (const key of PANEL_KEYS) {
     const prs = data.panels[key].prs.filter((pr) => pr.id !== id)
@@ -239,5 +246,9 @@ export function removePanelsPr(data: PanelsData | null, id: string): PanelsData 
       total: dropped ? Math.max(0, data.panels[key].total - 1) : data.panels[key].total,
     }
   }
-  return { panels, all: data.all.filter((pr) => pr.id !== id) }
+  return {
+    panels,
+    all: data.all.filter((pr) => pr.id !== id),
+    myPrsTotal: wasMyPr ? Math.max(0, data.myPrsTotal - 1) : data.myPrsTotal,
+  }
 }

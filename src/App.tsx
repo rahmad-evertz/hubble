@@ -280,9 +280,6 @@ function Count({
 }) {
   if (tabKey === 'stats') return null
   if (tabKey === 'inbox') return unread > 0 ? <span className="tab-count">{unread}</span> : null
-  const total =
-    tabKey === 'mine'
-      ? (panels?.panels.mine.total ?? 0) + (panels?.panels.assigned.total ?? 0)
-      : panels?.panels[tabKey as PanelKey].total
+  const total = tabKey === 'mine' ? panels?.myPrsTotal : panels?.panels[tabKey as PanelKey].total
   return total ? <span className="tab-count">{total}</span> : null
 }

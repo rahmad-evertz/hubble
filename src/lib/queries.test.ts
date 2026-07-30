@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { monthAlias, openPrQueries, statsQueries } from './queries'
+import { monthAlias, myPrsQuery, openPrQueries, statsQueries } from './queries'
 
 const ctx = { username: 'octocat', org: 'acme-inc' }
 
@@ -71,6 +71,27 @@ describe('statsQueries', () => {
     const q = statsQueries(ctx, months)
     expect(q.lifetimeAuthored).toBe('is:pr author:octocat org:acme-inc')
     expect(q.lifetimeReviewed).toBe('is:pr reviewed-by:octocat org:acme-inc')
+  })
+})
+
+describe('myPrsQuery', () => {
+  it('combines author and assignee with a boolean OR', () => {
+    const q = myPrsQuery(ctx)
+    expect(q).toContain('is:pr')
+    expect(q).toContain('is:open')
+    expect(q).toContain('(author:octocat OR assignee:octocat)')
+  })
+
+  it('scopes to the org like the other panel queries', () => {
+    expect(myPrsQuery(ctx)).toContain('org:acme-inc')
+  })
+
+  it('omits the org qualifier when none is configured', () => {
+    expect(myPrsQuery({ username: 'octocat', org: '' })).not.toContain('org:')
+  })
+
+  it('rejects an invalid username', () => {
+    expect(() => myPrsQuery({ username: 'bad name', org: 'acme-inc' })).toThrow()
   })
 })
 
