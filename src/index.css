@@ -1383,10 +1383,29 @@ table.prs tbody tr:focus-visible {
    surfaces (modals, the setup card), plus short transitions on the controls
    that already change on hover/focus, rather than a wholesale restyle. */
 
-:root[data-theme='dark'] .modal,
+/* True frosted glass on the modal panel itself: a translucent tint plus its
+   own blur+saturate, layered on top of the already-blurred backdrop behind
+   it, so the dimmed app content actually shows through, softened. The setup
+   card has nothing varied behind it to blur (it fills the whole page), so it
+   keeps an opaque surface and only borrows the light-catching inset edge. */
+:root[data-theme='dark'] .modal {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--bg-subtle) 82%, transparent),
+    color-mix(in srgb, var(--bg) 92%, transparent)
+  );
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  box-shadow:
+    var(--shadow-lg),
+    inset 0 1px 0 rgb(255 255 255 / 8%);
+}
+
 :root[data-theme='dark'] .setup-card {
   background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 96%, white 4%), var(--bg));
-  box-shadow: var(--shadow-lg);
+  box-shadow:
+    var(--shadow-lg),
+    inset 0 1px 0 rgb(255 255 255 / 8%);
 }
 
 :root[data-theme='dark'] .modal-backdrop {
@@ -1412,10 +1431,24 @@ table.prs tbody tr:focus-visible {
 }
 
 @media (prefers-color-scheme: dark) {
-  :root:where(:not([data-theme='light'])) .modal,
+  :root:where(:not([data-theme='light'])) .modal {
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--bg-subtle) 82%, transparent),
+      color-mix(in srgb, var(--bg) 92%, transparent)
+    );
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+    box-shadow:
+      var(--shadow-lg),
+      inset 0 1px 0 rgb(255 255 255 / 8%);
+  }
+
   :root:where(:not([data-theme='light'])) .setup-card {
     background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 96%, white 4%), var(--bg));
-    box-shadow: var(--shadow-lg);
+    box-shadow:
+      var(--shadow-lg),
+      inset 0 1px 0 rgb(255 255 255 / 8%);
   }
 
   :root:where(:not([data-theme='light'])) .modal-backdrop {
