@@ -148,7 +148,10 @@ export type PanelsData = {
 export async function fetchPanels(
   ctx: QueryContext,
   creds: Credentials,
-  first = 50,
+  // Each node also resolves reviews/reviewRequests/commits->statusCheckRollup,
+  // so this multiplies query cost across 4 panels; kept modest to keep the
+  // load fast and under GitHub's server-side timeout for this query shape.
+  first = 20,
 ): Promise<PanelsData> {
   const queries = openPrQueries(ctx)
   const data = await graphql<PanelsResponse>(
