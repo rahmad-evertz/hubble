@@ -191,7 +191,7 @@ export async function fetchPanels(
 
 /**
  * Dedupes across panels for display. Each PR's `roles` is already unioned
- * across all four panels above, so no role-merging is needed here — just
+ * across all four panels above, so no role-merging is needed here: just
  * one pass keeping first-seen order across the given keys.
  */
 export function combinePanelPrs(data: PanelsData | null, keys: PanelKey[]): PullRequest[] {
@@ -231,7 +231,7 @@ export function patchPanelsPr(
 export function removePanelsPr(data: PanelsData | null, id: string): PanelsData | null {
   if (!data) return data
   // The merged "My PRs" tab counts this PR once whether it was in mine,
-  // assigned, or both — check before either panel's list is filtered below.
+  // assigned, or both, so check before either panel's list is filtered below.
   const wasMyPr =
     data.panels.mine.prs.some((pr) => pr.id === id) ||
     data.panels.assigned.prs.some((pr) => pr.id === id)

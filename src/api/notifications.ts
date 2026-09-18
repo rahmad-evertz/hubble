@@ -95,7 +95,7 @@ export async function fetchNotifications(
 type SubjectRef = { owner: string; name: string; number: number; kind: 'pull' | 'issue' }
 type SubjectInfo = { url: string; isBot: boolean }
 
-/** `/repos/{owner}/{name}/pulls/{n}` or `.../issues/{n}` — other subjects have no number. */
+/** `/repos/{owner}/{name}/pulls/{n}` or `.../issues/{n}`. Other subjects have no number. */
 function parseSubject(apiUrl: string | null): SubjectRef | null {
   if (!apiUrl) return null
   const match = /\/repos\/([^/]+)\/([^/]+)\/(pulls|issues)\/(\d+)/.exec(apiUrl)
@@ -170,7 +170,7 @@ const MARK_CONCURRENCY = 6
  * across every organisation, which would silently ignore the org filter the user
  * is looking at and irreversibly clear notifications they never saw. GitHub
  * offers no org-scoped bulk equivalent, so precision costs one request per
- * thread — cheap against the 5,000/hour REST budget and worth it.
+ * thread, cheap against the 5,000/hour REST budget and worth it.
  *
  * Partial failure is reported rather than thrown: if 118 of 123 succeed, the
  * caller needs to know which five did not.
@@ -232,4 +232,17 @@ export const REASON_LABELS: Record<string, string> = {
 
 export function reasonLabel(reason: string): string {
   return REASON_LABELS[reason] ?? reason.replace(/_/g, ' ')
+}
+
+export type ReasonTier = 'demanding' | 'active' | 'ambient'
+
+/**
+ * Three bands rather than ten ranks: a gradation you cannot count is noise.
+ * Lets the inbox show the sort order it already applies as visible depth.
+ */
+export function reasonTier(reason: string): ReasonTier {
+  const rank = reasonRank(reason)
+  if (rank <= 1) return 'demanding'
+  if (rank <= 5) return 'active'
+  return 'ambient'
 }

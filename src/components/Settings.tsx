@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { isValidLogin } from '../lib/validate'
 import type { AppConfig } from '../types'
 
@@ -27,6 +27,31 @@ export default function Settings({
   const [ticketPattern, setTicketPattern] = useState(config.ticketPattern)
   const [ticketBaseUrl, setTicketBaseUrl] = useState(config.ticketBaseUrl)
   const [error, setError] = useState<string | null>(null)
+
+  const [closing, setClosing] = useState(false)
+  const closedRef = useRef(false)
+
+  const finishClose = useCallback(() => {
+    if (closedRef.current) return
+    closedRef.current = true
+    onClose()
+  }, [onClose])
+
+  const requestClose = useCallback(() => setClosing(true), [])
+
+  useEffect(() => {
+    if (!closing) return
+    const timer = window.setTimeout(finishClose, 400)
+    return () => window.clearTimeout(timer)
+  }, [closing, finishClose])
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') requestClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [requestClose])
 
   function save() {
     if (!isValidLogin(username.trim())) {
@@ -58,11 +83,20 @@ export default function Settings({
   }
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+    <div
+      className={closing ? 'modal-backdrop is-closing' : 'modal-backdrop'}
+      onClick={requestClose}
+    >
+      <div
+        className={closing ? 'modal is-closing' : 'modal'}
+        onClick={(e) => e.stopPropagation()}
+        onAnimationEnd={(e) => {
+          if (closing && e.target === e.currentTarget) finishClose()
+        }}
+      >
         <div className="modal-head">
           <h2>Settings</h2>
-          <button className="btn btn-sm btn-ghost" onClick={onClose}>
+          <button className="btn btn-sm btn-ghost" onClick={requestClose}>
             Close
           </button>
         </div>
@@ -150,8 +184,8 @@ export default function Settings({
           <button className="btn btn-ghost" onClick={onSignOut}>
             Sign out and forget token
           </button>
-          <div style={{ flex: 1 }} />
-          <button className="btn" onClick={onClose}>
+          <div className="spacer" />
+          <button className="btn" onClick={requestClose}>
             Cancel
           </button>
           <button className="btn btn-primary" onClick={save}>

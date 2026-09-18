@@ -14,7 +14,7 @@ describe('isConfigured', () => {
     expect(isConfigured({ ...BLANK_CONFIG, githubToken: 'ghp_x' })).toBe(false)
   })
 
-  it('does not require an org — a blank org widens the search instead', () => {
+  it('does not require an org, since a blank org widens the search instead', () => {
     expect(
       isConfigured({ ...BLANK_CONFIG, githubToken: 'ghp_x', username: 'octocat', org: '' }),
     ).toBe(true)

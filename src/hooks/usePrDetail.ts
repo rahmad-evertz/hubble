@@ -10,14 +10,18 @@ import {
   setDraftState,
   type CloseResult,
 } from '../api/prDetail'
-import type { PrDetail, PrFile, ReviewComment, ReviewEvent, ReviewState } from '../types'
+import type {
+  PrDetail,
+  PrFile,
+  PrMutationEffect,
+  ReviewComment,
+  ReviewEvent,
+  ReviewState,
+} from '../types'
 
 export type PrIdentity = { id: string; repo: string; number: number }
 
-export type PrMutationEffect =
-  | { type: 'review'; userLatestReview: ReviewState }
-  | { type: 'draft'; isDraft: boolean }
-  | { type: 'closed' }
+export type { PrMutationEffect }
 
 export type PrDetailData = PrDetail & { files: PrFile[]; filesTruncated: boolean }
 
@@ -80,10 +84,13 @@ export function usePrDetail(
       setError(null)
       try {
         const state = await submitReview(pr.id, event, body, creds)
-        if (data) {
-          setData({ ...data, reviewDecision: 'APPROVED' })
-        }
         onMutated?.({ type: 'review', userLatestReview: state as ReviewState })
+        // reviewDecision is the aggregate across every reviewer, so one
+        // reviewer cannot derive it. Refetch rather than guess: this used to
+        // hardcode APPROVED, which painted a green badge after Request
+        // changes. userLatestReview above is this user's own review and is
+        // exact, so the row updates immediately either way.
+        refresh()
       } catch (e) {
         if (e instanceof AuthError) throw e
         setError(e instanceof Error ? e : new Error(String(e)))
@@ -91,7 +98,7 @@ export function usePrDetail(
         setMutating(false)
       }
     },
-    [pr.id, data, creds, onMutated],
+    [pr.id, creds, onMutated, refresh],
   )
 
   const handleToggleDraft = useCallback(async (): Promise<void> => {

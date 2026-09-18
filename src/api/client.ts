@@ -2,7 +2,7 @@ import type { RateLimitInfo } from '../types'
 
 export const DEFAULT_API_BASE = 'https://api.github.com'
 
-/** The token is absent, invalid, or was revoked — the caller should re-run setup. */
+/** The token is absent, invalid, or was revoked: the caller should re-run setup. */
 export class AuthError extends Error {
   constructor(message: string) {
     super(message)
@@ -62,7 +62,7 @@ async function fetchWithRetry(url: string, init: RequestInit, attempts = 3): Pro
       lastResponse = res
     } catch (error) {
       // fetch() itself throws (rather than resolving with a bad status) on
-      // network-level failures — dropped wifi, DNS hiccups, a connection reset
+      // network-level failures: dropped wifi, DNS hiccups, a connection reset
       // mid-flight. Those are exactly as transient as a 502, so retry them too;
       // otherwise a single blip surfaces as an unretried "Failed to fetch".
       lastError = error
@@ -104,7 +104,7 @@ export async function graphql<T>(
 
   if (body.errors?.length) {
     const message = body.errors.map((e) => e.message).join('; ')
-    // GraphQL routinely returns partial data alongside errors — a search touching
+    // GraphQL routinely returns partial data alongside errors, and a search touching
     // one inaccessible repo should not blank the whole dashboard.
     if (!body.data) throw new GitHubError(message)
     console.warn(`[hubble] partial GraphQL response: ${message}`)

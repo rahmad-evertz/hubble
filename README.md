@@ -1,6 +1,6 @@
 # Hubble
 
-A personal GitHub dashboard for one user across one organisation — every open pull
+A personal GitHub dashboard for one user across one organisation: every open pull
 request in your name, everywhere you are tagged, your notification inbox, and what
 your contribution has actually looked like over time. Built to sit in a browser tab.
 
@@ -58,7 +58,7 @@ npm install
 npm run dev          # → http://localhost:5173
 ```
 
-The setup screen appears on first load. There is no config file to create — one is
+The setup screen appears on first load. There is no config file to create. One is
 optional, and only useful to skip the setup screen while iterating:
 
 ```bash
@@ -84,7 +84,7 @@ https://github.com/settings/tokens/new?scopes=repo,read:org&description=hubble
 your notifications. `read:org` resolves organisation membership.
 
 **If your organisation uses SAML single sign-on, the token must be SSO-authorized
-for it** — otherwise every query succeeds and returns nothing. The setup screen
+for it**, otherwise every query succeeds and returns nothing. The setup screen
 checks the organisation up front so this surfaces as an error rather than an
 inexplicably empty dashboard.
 
@@ -98,23 +98,49 @@ One-time setup: enable Pages for the repository with **Source: GitHub Actions**.
 
 Private repositories can restrict who may view the published site, which needs a
 paid plan for personal accounts. If that is unavailable, publishing publicly is
-safe here — the build holds no token, no data and no identifiers, and CI enforces it.
+safe here: the build holds no token, no data and no identifiers, and CI enforces it.
 
 ## The four panels
 
-| Panel                                | What it answers                                | Query                                           |
-| ------------------------------------ | ---------------------------------------------- | ----------------------------------------------- |
-| **My PRs**                           | What of mine is open, and what is blocking it? | `is:pr is:open author:<you>`                    |
-| **To review / Assigned / Mentioned** | Where am I tagged?                             | `review-requested:` · `assignee:` · `mentions:` |
-| **Inbox**                            | What has GitHub told me, grouped by why?       | REST `/notifications`                           |
-| **Stats**                            | What has my contribution looked like?          | 12 monthly search buckets                       |
+| Panel         | What it answers                                | Query                            |
+| ------------- | ---------------------------------------------- | -------------------------------- |
+| **My PRs**    | What of mine is open, and what is blocking it? | `author:<you> OR assignee:<you>` |
+| **To review** | What is waiting on me?                         | `review-requested:<you>`         |
+| **Mentioned** | Where am I tagged?                             | `mentions:<you>`                 |
+| **Inbox**     | What has GitHub told me, grouped by why?       | REST `/notifications`            |
+| **Stats**     | What has my contribution looked like?          | 12 monthly search buckets        |
+
+Authored and assigned share one tab, because in practice they answer the same
+question. The badge on it is a single server-side count over both, so a pull
+request that is yours _and_ assigned to you is counted once rather than twice.
 
 Every query is scoped with `org:<name>` and nothing else, so **all repositories in
 the organisation are covered with no list to curate**. Leave the organisation blank
 to search everything your token can see.
 
-A pull request that reaches you more than one way — authored by you _and_ mentioning
-you — appears once, carrying both role badges.
+A pull request that reaches you more than one way, authored by you _and_ mentioning
+you, appears once, carrying both role badges.
+
+## Two views of the same list
+
+The pull-request panels render as a **deck** by default: cards on a perspective
+plane, nearest first, receding into the distance in whatever order the sort
+control is set to. Under **Activity** the nearest card is the most recently
+touched; under **Age** it is the oldest, which is the useful direction for
+finding neglected work. A card is pulled slightly forward, and its rim tinted,
+when something about it asks for action: a failing check, a conflict, requested
+changes, or a review request you have not answered. That pull is always smaller
+than one slot, so the visual order can never disagree with the reading order,
+which is what keeps tab traversal and screen-reader order honest.
+
+The **table** is one click away and the choice is remembered. It is denser, and
+it stays the better tool when you want eleven columns at once.
+
+Motion answers to `prefers-reduced-motion`. With it set, the ambient drift and
+the pointer parallax stop and the deck flattens to a plain card list, while the
+depth hierarchy, the shadows and every instant state change stay exactly as they
+are. Below 720px the deck flattens too: there is no hover on a touch screen, so
+a layout that depended on one would be broken there.
 
 ## Things worth knowing
 
@@ -134,7 +160,7 @@ Build a stats panel on it and you get a page of zeros with no error. Hubble deri
 everything from search instead.
 
 **Reviews cannot be dated precisely.** GitHub search has no `reviewed:` qualifier,
-so the per-month review series uses `updated:` as a proxy — it buckets by last
+so the per-month review series uses `updated:` as a proxy: it buckets by last
 activity on the pull request, not by when the review happened. The chart labels it
 approximate. Lifetime review totals are exact.
 
@@ -143,7 +169,7 @@ notifications. Point the dashboard at a different username and the inbox is hidd
 with an explanation rather than shown empty.
 
 **Notification subjects need resolving to be usable.** The payload carries an API
-URL but no `html_url`, and names no author — so subjects are neither clickable nor
+URL but no `html_url`, and names no author, so subjects are neither clickable nor
 classifiable as bot-authored on their own. One batched GraphQL query resolves them
 all for a single rate-limit point.
 
@@ -152,7 +178,7 @@ all for a single rate-limit point.
 `npm audit` reports a `brace-expansion` denial-of-service reaching the tree through
 ESLint's `minimatch@3`. It is accepted rather than ignored: it is a devDependency
 that never ships to the browser, and it is only reachable by linting adversarial
-glob patterns. It currently cannot be fixed — `brace-expansion@5` changed its export
+glob patterns. It currently cannot be fixed: `brace-expansion@5` changed its export
 shape, so overriding to a patched release breaks `minimatch@3` outright, and
 `npm audit fix --force` resolves it only by downgrading ESLint. Worth re-checking
 whenever ESLint drops `minimatch@3`.

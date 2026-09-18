@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import { parsePatch, indexThreadsByLine, threadsForLine } from '../lib/diff'
 import type { PrFile, ReviewThread } from '../types'
 import CommentThread from './CommentThread'
@@ -11,6 +11,7 @@ type Props = {
 
 export default function DiffFile({ file, threads, onReplyToThread }: Props) {
   const [expanded, setExpanded] = useState(true)
+  const [threadsOpen, setThreadsOpen] = useState(true)
 
   const parsed = useMemo(() => parsePatch(file.patch), [file.patch])
 
@@ -82,7 +83,7 @@ export default function DiffFile({ file, threads, onReplyToThread }: Props) {
                 </>
               ) : (
                 <>
-                  <p>Not shown — binary or too large</p>
+                  <p>Not shown: binary or too large</p>
                   <a href={file.blobUrl} target="_blank" rel="noreferrer">
                     View on GitHub
                   </a>
@@ -92,77 +93,71 @@ export default function DiffFile({ file, threads, onReplyToThread }: Props) {
           ) : (
             <>
               {parsed.available && (
-                <div className="table-scroll">
-                  <table className="diff">
-                    <tbody>
-                      {parsed.hunks.map((hunk, hunkIdx) => (
-                        <tbody key={hunkIdx}>
-                          <tr className="diff-hunk-head">
-                            <td colSpan={4} className="diff-hunk-header">
-                              @@ -{hunk.oldStart},{hunk.oldLines} +{hunk.newStart},{hunk.newLines}{' '}
-                              @@
-                              {hunk.sectionHeading && ` ${hunk.sectionHeading}`}
+                <table className="diff">
+                  {parsed.hunks.map((hunk, hunkIdx) => (
+                    <tbody key={hunkIdx}>
+                      <tr className="diff-hunk-head">
+                        <td colSpan={4} className="diff-hunk-header">
+                          @@ -{hunk.oldStart},{hunk.oldLines} +{hunk.newStart},{hunk.newLines} @@
+                          {hunk.sectionHeading && ` ${hunk.sectionHeading}`}
+                        </td>
+                      </tr>
+                      {hunk.lines.map((line, lineIdx) => (
+                        <Fragment key={`${hunkIdx}-${lineIdx}`}>
+                          <tr
+                            className={`diff-line ${
+                              line.type === 'add'
+                                ? 'diff-line-add'
+                                : line.type === 'del'
+                                  ? 'diff-line-del'
+                                  : ''
+                            }`}
+                          >
+                            <td className="diff-gutter">
+                              {line.oldLine !== null ? line.oldLine : ''}
+                            </td>
+                            <td className="diff-gutter">
+                              {line.newLine !== null ? line.newLine : ''}
+                            </td>
+                            <td className="diff-sign">
+                              {line.type === 'add' ? '+' : line.type === 'del' ? '\u2212' : ' '}
+                            </td>
+                            <td className="diff-content">
+                              <code>{line.content}</code>
+                              {line.noNewlineAtEnd && <span className="diff-no-newline"> ↵</span>}
                             </td>
                           </tr>
-                          {hunk.lines.map((line, lineIdx) => {
-                            const lineThreads = threadsForLine(line, threadIndex)
-                            const key = `${hunkIdx}-${lineIdx}`
-                            return (
-                              <tbody key={key}>
-                                <tr
-                                  className={`diff-line ${
-                                    line.type === 'add'
-                                      ? 'diff-line-add'
-                                      : line.type === 'del'
-                                        ? 'diff-line-del'
-                                        : ''
-                                  }`}
-                                >
-                                  <td className="diff-gutter">
-                                    {line.oldLine !== null ? line.oldLine : ''}
-                                  </td>
-                                  <td className="diff-gutter">
-                                    {line.newLine !== null ? line.newLine : ''}
-                                  </td>
-                                  <td className="diff-sign">
-                                    {line.type === 'add' ? '+' : line.type === 'del' ? '−' : ' '}
-                                  </td>
-                                  <td className="diff-content">
-                                    <code>{line.content}</code>
-                                    {line.noNewlineAtEnd && (
-                                      <span style={{ opacity: 0.5 }}> ↵</span>
-                                    )}
-                                  </td>
-                                </tr>
-                                {lineThreads.map((thread) => (
-                                  <tr key={`thread-${thread.id}`} className="diff-thread-row">
-                                    <td colSpan={4}>
-                                      <CommentThread
-                                        comments={thread.comments}
-                                        onReply={(body) => onReplyToThread(thread.id, body)}
-                                        resolved={thread.isResolved}
-                                        isOutdated={thread.isOutdated}
-                                      />
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            )
-                          })}
-                        </tbody>
+                          {threadsForLine(line, threadIndex).map((thread) => (
+                            <tr key={`thread-${thread.id}`} className="diff-thread-row">
+                              <td colSpan={4}>
+                                <CommentThread
+                                  comments={thread.comments}
+                                  onReply={(body) => onReplyToThread(thread.id, body)}
+                                  resolved={thread.isResolved}
+                                  isOutdated={thread.isOutdated}
+                                />
+                              </td>
+                            </tr>
+                          ))}
+                        </Fragment>
                       ))}
                     </tbody>
-                  </table>
-                </div>
+                  ))}
+                </table>
               )}
 
               {orphanedThreads.length > 0 && (
                 <div className="diff-orphaned-threads">
-                  <div className="inbox-group-head">
-                    <button className="chevron">▼</button>
+                  <button
+                    className="section-head"
+                    aria-expanded={threadsOpen}
+                    onClick={() => setThreadsOpen((v) => !v)}
+                  >
+                    <span className="chevron">{threadsOpen ? '▾' : '▸'}</span>
                     <span>Other comments on this file</span>
-                  </div>
-                  <div className="inbox-group-bar">
+                    <span className="tab-count">{orphanedThreads.length}</span>
+                  </button>
+                  <div className={threadsOpen ? 'thread-stack' : 'thread-stack is-collapsed'}>
                     {orphanedThreads.map((thread) => (
                       <CommentThread
                         key={thread.id}

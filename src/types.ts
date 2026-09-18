@@ -1,4 +1,4 @@
-/** Runtime configuration. Never baked into the build — see lib/config.ts. */
+/** Runtime configuration. Never baked into the build. See lib/config.ts. */
 export type AppConfig = {
   githubToken: string
   username: string
@@ -36,7 +36,7 @@ export type PullRequest = {
   /** owner/name */
   repo: string
   authorLogin: string | null
-  /** From GraphQL `author.__typename === 'Bot'` — no title heuristics needed. */
+  /** From GraphQL `author.__typename === 'Bot'`, so no title heuristics are needed. */
   authorIsBot: boolean
   reviewDecision: ReviewDecision
   mergeable: Mergeable
@@ -70,7 +70,7 @@ export type PanelsData = {
   panels: Panels
   /** Every distinct PR across all panels, for cross-panel lookups. */
   all: PullRequest[]
-  /** Exact authored ∪ assigned count for the merged "My PRs" tab — server-
+  /** Exact authored ∪ assigned count for the merged "My PRs" tab, server-
    *  computed, since panels.mine.total + panels.assigned.total double-counts
    *  a PR that is both. */
   myPrsTotal: number
@@ -95,7 +95,7 @@ export type MonthBucket = {
   /** YYYY-MM */
   key: string
   merged: number
-  /** Approximate — GitHub search has no `reviewed:` date qualifier. */
+  /** Approximate: GitHub search has no `reviewed:` date qualifier. */
   reviewedApprox: number
 }
 

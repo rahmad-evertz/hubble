@@ -62,7 +62,7 @@ export function clearConfig(): void {
 }
 
 /**
- * Enough to render a dashboard. The org is intentionally not required — leaving
+ * Enough to render a dashboard. The org is intentionally not required: leaving
  * it blank widens every search to all repos the token can see, which is a
  * legitimate way to use the app rather than an incomplete setup.
  */

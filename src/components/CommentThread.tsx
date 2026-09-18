@@ -38,7 +38,7 @@ export default function CommentThread({
   }
 
   return (
-    <div className="diff-thread-row">
+    <div className="comment-thread-wrap">
       <div className="comment-thread">
         {resolved && <div className="thread-resolved-bar">✓ Resolved</div>}
         {isOutdated && <div className="thread-resolved-bar">Outdated</div>}
@@ -72,7 +72,7 @@ export default function CommentThread({
               disabled={busy}
             />
             {error && <div className="alert alert-error">{error}</div>}
-            <div style={{ display: 'flex', gap: '8px' }}>
+            <div className="row-actions row-actions-start">
               <button className="btn btn-sm" onClick={() => setReplying(false)} disabled={busy}>
                 Cancel
               </button>

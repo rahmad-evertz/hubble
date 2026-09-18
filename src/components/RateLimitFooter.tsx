@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import { onRateLimit } from '../api/client'
 import type { RateLimitInfo } from '../types'
 
@@ -13,8 +13,12 @@ export default function RateLimitFooter({ notificationPollSeconds }: Props) {
 
   useEffect(() => onRateLimit(setInfo), [])
 
+  // Guarded: a zero limit would give NaN, and calc(NaN * 100%) invalidates
+  // the whole declaration.
+  const quota = info && info.limit > 0 ? Math.max(0, Math.min(1, info.remaining / info.limit)) : 1
+
   return (
-    <footer className="footer">
+    <footer className="footer" style={{ '--quota': quota } as CSSProperties}>
       <span>Hubble reads GitHub directly from this browser. Nothing is stored anywhere else.</span>
       <span className="sep">·</span>
       {info ? (
@@ -25,7 +29,7 @@ export default function RateLimitFooter({ notificationPollSeconds }: Props) {
           {new Date(info.resetAt).toLocaleTimeString()}
         </span>
       ) : (
-        <span>GraphQL quota —</span>
+        <span>GraphQL quota unknown</span>
       )}
       {notificationPollSeconds !== null && (
         <>

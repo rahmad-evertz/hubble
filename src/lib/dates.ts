@@ -14,7 +14,7 @@ export function monthKeys(count: number, now: Date = new Date()): string[] {
 
 /**
  * Inclusive YYYY-MM-DD bounds for a month key, for GitHub's `merged:a..b` syntax.
- * The end date is the real last day of the month even for the current month —
+ * The end date is the real last day of the month even for the current month:
  * GitHub accepts ranges extending into the future and it keeps buckets stable.
  */
 export function monthRange(key: string): { start: string; end: string } {
