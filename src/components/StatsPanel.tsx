@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type CSSProperties } from 'react'
 import { MONTHS_COVERED, repoTallyTruncated } from '../api/stats'
 import { monthLabel } from '../lib/dates'
 import type { Stats } from '../types'
@@ -14,10 +14,10 @@ export default function StatsPanel({ stats, org }: Props) {
   return (
     <>
       <div className="stat-tiles">
-        <Tile value={stats.lifetime.authored} label={`Pull requests authored ${scope}`} />
-        <Tile value={stats.lifetime.merged} label="Of those, merged" />
-        <Tile value={stats.lifetime.reviewed} label="Pull requests reviewed" />
-        <Tile value={stats.lifetime.openAuthored} label="Still open" />
+        <Tile index={0} value={stats.lifetime.authored} label={`Pull requests authored ${scope}`} />
+        <Tile index={1} value={stats.lifetime.merged} label="Of those, merged" />
+        <Tile index={2} value={stats.lifetime.reviewed} label="Pull requests reviewed" />
+        <Tile index={3} value={stats.lifetime.openAuthored} label="Still open" />
       </div>
 
       <div className="stats-grid">
@@ -25,10 +25,10 @@ export default function StatsPanel({ stats, org }: Props) {
           <div className="panel-head">
             <h2>Last {MONTHS_COVERED} months</h2>
             <span className="note">
-              reviewed counts are approximate — GitHub search can only date-filter by last activity,
+              reviewed counts are approximate: GitHub search can only date-filter by last activity,
               not by when you reviewed
             </span>
-            <div style={{ flex: 1 }} />
+            <div className="spacer" />
             <button className="btn btn-sm btn-ghost" onClick={() => setShowTable((v) => !v)}>
               {showTable ? 'Chart' : 'Table'}
             </button>
@@ -72,9 +72,7 @@ export default function StatsPanel({ stats, org }: Props) {
           </div>
           <div className="panel-body chart">
             {stats.topRepos.length === 0 ? (
-              <div style={{ color: 'var(--fg-muted)' }}>
-                No merged pull requests in this window.
-              </div>
+              <div className="text-muted">No merged pull requests in this window.</div>
             ) : (
               <div className="repo-bars">
                 {stats.topRepos.map((entry) => (
@@ -100,9 +98,9 @@ export default function StatsPanel({ stats, org }: Props) {
   )
 }
 
-function Tile({ value, label }: { value: number; label: string }) {
+function Tile({ index, value, label }: { index: number; value: number; label: string }) {
   return (
-    <div className="tile">
+    <div className="tile" style={{ '--i': index } as CSSProperties}>
       <div className="value">{format(value)}</div>
       <div className="label">{label}</div>
     </div>

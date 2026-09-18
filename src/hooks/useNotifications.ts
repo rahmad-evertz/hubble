@@ -39,7 +39,7 @@ export function useNotifications(
 
   const key = `${creds.token}|${creds.apiBaseUrl}|${org}`
 
-  // Filtering happens client-side, so a changed org cannot be served from a 304 —
+  // Filtering happens client-side, so a changed org cannot be served from a 304:
   // the raw feed is not retained. Declared before the fetch effect so the reset
   // lands first when both run on the same key change.
   useEffect(() => {

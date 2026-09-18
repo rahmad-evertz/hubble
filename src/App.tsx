@@ -5,15 +5,17 @@ import { combinePanelPrs, fetchPanels, PANEL_KEYS, patchPanelsPr, removePanelsPr
 import { fetchStats } from './api/stats'
 import Header from './components/Header'
 import NotificationInbox from './components/NotificationInbox'
-import PrTable from './components/PrTable'
+import PrList from './components/PrList'
 import PrDetailModal from './components/PrDetailModal'
 import RateLimitFooter from './components/RateLimitFooter'
 import Settings from './components/Settings'
 import SetupScreen from './components/SetupScreen'
+import Skeleton from './components/Skeleton'
 import StatsPanel from './components/StatsPanel'
 import { useAsync } from './hooks/useAsync'
 import { useAutoRefresh } from './hooks/useAutoRefresh'
 import { useNotifications } from './hooks/useNotifications'
+import { usePointerParallax } from './hooks/usePointerParallax'
 import { useTheme } from './hooks/useTheme'
 import { BLANK_CONFIG, clearConfig, isConfigured, loadConfig, saveConfig } from './lib/config'
 import * as storage from './lib/storage'
@@ -21,7 +23,7 @@ import type { AppConfig, PanelKey, PrMutationEffect } from './types'
 
 type TabKey = PanelKey | 'inbox' | 'stats'
 
-/** 'mine' now covers both authored and assigned PRs — see combinePanelPrs below. */
+/** 'mine' now covers both authored and assigned PRs. See combinePanelPrs below. */
 const TABS: { key: TabKey; label: string }[] = [
   { key: 'mine', label: 'My PRs' },
   { key: 'requested', label: 'To review' },
@@ -45,6 +47,12 @@ const EMPTY_COPY: Record<PanelKey, { title: string; body: string }> = {
   mentioned: { title: 'No mentions', body: 'You are not mentioned in any open pull request.' },
 }
 
+/** The three PR tabs share one panel, so switching between them is a prop
+ *  change rather than a remount. */
+function panelGroup(tab: TabKey): string {
+  return PANEL_KEYS.includes(tab as PanelKey) ? 'prs' : tab
+}
+
 function initialTab(): TabKey {
   const wanted = new URLSearchParams(window.location.search).get('panel')
   return TABS.some((t) => t.key === wanted) ? (wanted as TabKey) : 'mine'
@@ -60,6 +68,10 @@ export default function App() {
   /** Stats cost a request, so they are not fetched until the tab is first opened. */
   const [statsRequested, setStatsRequested] = useState(() => initialTab() === 'stats')
   const [selectedPrId, setSelectedPrId] = useState<string | null>(null)
+
+  // Above the early returns below, so the setup and loading routes are covered
+  // as well. Writes CSS custom properties on <html>; never re-renders.
+  usePointerParallax()
 
   useEffect(() => {
     void loadConfig().then(setConfig)
@@ -141,7 +153,7 @@ export default function App() {
   const authFailed = panels.error instanceof AuthError || notifications.error instanceof AuthError
 
   if (config === null) {
-    return <div className="skeleton">Loading…</div>
+    return <Skeleton label="Loading…" rows={3} />
   }
 
   if (!isConfigured(config) || authFailed) {
@@ -176,7 +188,7 @@ export default function App() {
         {error && (
           <div className="alert alert-error">
             {error.message}
-            {' — showing the last data that loaded successfully.'}
+            {' Showing the last data that loaded successfully.'}
           </div>
         )}
 
@@ -184,9 +196,11 @@ export default function App() {
           {TABS.map(({ key, label }) => (
             <button
               key={key}
+              id={`tab-${key}`}
               role="tab"
               className="tab"
               aria-selected={tab === key}
+              aria-controls={`panel-${panelGroup(key)}`}
               onClick={() => {
                 setTab(key)
                 if (key === 'stats') setStatsRequested(true)
@@ -198,10 +212,20 @@ export default function App() {
           ))}
         </div>
 
-        {PANEL_KEYS.includes(tab as PanelKey) &&
-          (panels.data ? (
-            <div className="card">
-              <PrTable
+        {/* Keyed so a tab change remounts and the enter animation restarts.
+            Keyed on the panel group, not the tab, so switching between the
+            three PR tabs still reconciles in place and keeps PrList's scroll
+            position and collapsed repos. */}
+        <div
+          className="panel"
+          key={panelGroup(tab)}
+          role="tabpanel"
+          id={`panel-${panelGroup(tab)}`}
+          aria-labelledby={`tab-${tab}`}
+        >
+          {PANEL_KEYS.includes(tab as PanelKey) &&
+            (panels.data ? (
+              <PrList
                 prs={
                   tab === 'mine'
                     ? combinePanelPrs(panels.data, MINE_PANELS)
@@ -212,28 +236,28 @@ export default function App() {
                 emptyBody={EMPTY_COPY[tab as PanelKey].body}
                 onOpen={(pr) => setSelectedPrId(pr.id)}
               />
-            </div>
-          ) : (
-            <div className="skeleton">Loading pull requests…</div>
-          ))}
+            ) : (
+              <Skeleton label="Loading pull requests…" rows={8} />
+            ))}
 
-        {tab === 'inbox' && (
-          <NotificationInbox
-            items={notifications.items}
-            available={inboxAvailable}
-            viewerLogin={viewerLogin ?? '—'}
-            username={config.username}
-            marking={notifications.marking}
-            onMarkRead={(ids) => void notifications.markRead(ids)}
-          />
-        )}
+          {tab === 'inbox' && (
+            <NotificationInbox
+              items={notifications.items}
+              available={inboxAvailable}
+              viewerLogin={viewerLogin ?? '\u2014'}
+              username={config.username}
+              marking={notifications.marking}
+              onMarkRead={(ids) => void notifications.markRead(ids)}
+            />
+          )}
 
-        {tab === 'stats' &&
-          (stats.data ? (
-            <StatsPanel stats={stats.data} org={config.org} />
-          ) : (
-            <div className="skeleton">Loading contribution stats…</div>
-          ))}
+          {tab === 'stats' &&
+            (stats.data ? (
+              <StatsPanel stats={stats.data} org={config.org} />
+            ) : (
+              <Skeleton label="Loading contribution stats…" rows={6} />
+            ))}
+        </div>
       </main>
 
       <RateLimitFooter notificationPollSeconds={notifications.pollSeconds} />

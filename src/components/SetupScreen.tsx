@@ -84,134 +84,141 @@ export default function SetupScreen({ initial, onComplete }: Props) {
 
   return (
     <div className="setup">
-      <div className="setup-card">
-        <h1>Hubble</h1>
-        <p className="setup-tagline">
-          Everything in your name across an organisation, resolved into one view.
-        </p>
+      {/* The plates behind the card are pseudo-elements on the stack, pinned to
+          the card's own box, so they track its size for free. */}
+      <div className="setup-stack" data-step={step}>
+        <div className="setup-card">
+          <h1>Hubble</h1>
+          <p className="setup-tagline">
+            Everything in your name across an organisation, resolved into one view.
+          </p>
 
-        <div className="steps" aria-hidden="true">
-          <span className={`step-pip ${step > 1 ? 'done' : 'active'}`} />
-          <span className={`step-pip ${step > 2 ? 'done' : step === 2 ? 'active' : ''}`} />
-          <span className={`step-pip ${step === 3 ? 'active' : ''}`} />
-        </div>
+          <div className="steps" aria-hidden="true">
+            <span className={`step-pip ${step > 1 ? 'done' : 'active'}`} />
+            <span className={`step-pip ${step > 2 ? 'done' : step === 2 ? 'active' : ''}`} />
+            <span className={`step-pip ${step === 3 ? 'active' : ''}`} />
+          </div>
 
-        {step === 1 && (
-          <>
-            <p className="scopes">
-              Hubble runs entirely in your browser and talks to GitHub directly — there is no server
-              and nothing is sent anywhere else. Your token is stored only in this browser&apos;s
-              local storage. It needs <code>repo</code> to read pull requests on private
-              repositories and <code>read:org</code> to resolve organisation membership.
-            </p>
-            <div className="field">
-              <label htmlFor="token">Personal access token</label>
-              <input
-                id="token"
-                type="password"
-                value={token}
-                autoComplete="off"
-                spellCheck={false}
-                placeholder="ghp_…"
-                onChange={(e) => setToken(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && looksLikeToken(token)) void verifyToken()
-                }}
-              />
-              <div className="hint">
-                <a href={TOKEN_URL} target="_blank" rel="noreferrer">
-                  Create one with the right scopes pre-filled →
-                </a>
-              </div>
-            </div>
-            {error && <div className="alert alert-error">{error}</div>}
-            <div className="setup-actions">
-              <button
-                className="btn btn-primary"
-                disabled={busy || !looksLikeToken(token)}
-                onClick={() => void verifyToken()}
-              >
-                {busy ? 'Checking…' : 'Continue'}
-              </button>
-            </div>
-          </>
-        )}
-
-        {step === 2 && (
-          <>
-            <div className="field">
-              <label htmlFor="username">Whose activity should this dashboard show?</label>
-              <input
-                id="username"
-                type="text"
-                value={username}
-                autoComplete="off"
-                spellCheck={false}
-                onChange={(e) => setUsername(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') confirmUsername()
-                }}
-              />
-              <div className="hint">
-                {viewer && `Your token belongs to ${viewer.login}.`} Pull requests, reviews and
-                stats are all read for this user.
-              </div>
-            </div>
-            {differentUser && (
-              <div className="alert alert-info">
-                Pointing Hubble at someone else works, with two limits: the notification inbox is
-                always your own (GitHub exposes no one else&apos;s), and you will only see private
-                repositories your token can reach.
-              </div>
+          <div className="setup-step" key={step}>
+            {step === 1 && (
+              <>
+                <p className="scopes">
+                  Hubble runs entirely in your browser and talks to GitHub directly: there is no
+                  server and nothing is sent anywhere else. Your token is stored only in this
+                  browser&apos;s local storage. It needs <code>repo</code> to read pull requests on
+                  private repositories and <code>read:org</code> to resolve organisation membership.
+                </p>
+                <div className="field">
+                  <label htmlFor="token">Personal access token</label>
+                  <input
+                    id="token"
+                    type="password"
+                    value={token}
+                    autoComplete="off"
+                    spellCheck={false}
+                    placeholder="ghp_…"
+                    onChange={(e) => setToken(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && looksLikeToken(token)) void verifyToken()
+                    }}
+                  />
+                  <div className="hint">
+                    <a href={TOKEN_URL} target="_blank" rel="noreferrer">
+                      Create one with the right scopes pre-filled →
+                    </a>
+                  </div>
+                </div>
+                {error && <div className="alert alert-error">{error}</div>}
+                <div className="setup-actions">
+                  <button
+                    className="btn btn-primary"
+                    disabled={busy || !looksLikeToken(token)}
+                    onClick={() => void verifyToken()}
+                  >
+                    {busy ? 'Checking…' : 'Continue'}
+                  </button>
+                </div>
+              </>
             )}
-            {error && <div className="alert alert-error">{error}</div>}
-            <div className="setup-actions">
-              <button className="btn btn-primary" onClick={confirmUsername}>
-                Continue
-              </button>
-              <button className="btn btn-ghost" onClick={() => setStep(1)}>
-                Back
-              </button>
-            </div>
-          </>
-        )}
 
-        {step === 3 && (
-          <>
-            <div className="field">
-              <label htmlFor="org">Organisation</label>
-              <input
-                id="org"
-                type="text"
-                value={org}
-                autoComplete="off"
-                spellCheck={false}
-                placeholder="my-org"
-                onChange={(e) => setOrg(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') void verifyOrgAndFinish()
-                }}
-              />
-              <div className="hint">
-                Every search is scoped to this organisation, across all of its repositories — no
-                repository list to curate. Leave it blank to search everything your token can see.
-              </div>
-            </div>
-            {error && <div className="alert alert-error">{error}</div>}
-            <div className="setup-actions">
-              <button
-                className="btn btn-primary"
-                disabled={busy}
-                onClick={() => void verifyOrgAndFinish()}
-              >
-                {busy ? 'Checking…' : 'Open dashboard'}
-              </button>
-              <button className="btn btn-ghost" onClick={() => setStep(2)}>
-                Back
-              </button>
-            </div>
-          </>
-        )}
+            {step === 2 && (
+              <>
+                <div className="field">
+                  <label htmlFor="username">Whose activity should this dashboard show?</label>
+                  <input
+                    id="username"
+                    type="text"
+                    value={username}
+                    autoComplete="off"
+                    spellCheck={false}
+                    onChange={(e) => setUsername(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') confirmUsername()
+                    }}
+                  />
+                  <div className="hint">
+                    {viewer && `Your token belongs to ${viewer.login}.`} Pull requests, reviews and
+                    stats are all read for this user.
+                  </div>
+                </div>
+                {differentUser && (
+                  <div className="alert alert-info">
+                    Pointing Hubble at someone else works, with two limits: the notification inbox
+                    is always your own (GitHub exposes no one else&apos;s), and you will only see
+                    private repositories your token can reach.
+                  </div>
+                )}
+                {error && <div className="alert alert-error">{error}</div>}
+                <div className="setup-actions">
+                  <button className="btn btn-primary" onClick={confirmUsername}>
+                    Continue
+                  </button>
+                  <button className="btn btn-ghost" onClick={() => setStep(1)}>
+                    Back
+                  </button>
+                </div>
+              </>
+            )}
+
+            {step === 3 && (
+              <>
+                <div className="field">
+                  <label htmlFor="org">Organisation</label>
+                  <input
+                    id="org"
+                    type="text"
+                    value={org}
+                    autoComplete="off"
+                    spellCheck={false}
+                    placeholder="my-org"
+                    onChange={(e) => setOrg(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') void verifyOrgAndFinish()
+                    }}
+                  />
+                  <div className="hint">
+                    Every search is scoped to this organisation, across all of its repositories,
+                    with no repository list to curate. Leave it blank to search everything your
+                    token can see.
+                  </div>
+                </div>
+                {error && <div className="alert alert-error">{error}</div>}
+                <div className="setup-actions">
+                  <button
+                    className="btn btn-primary"
+                    disabled={busy}
+                    onClick={() => void verifyOrgAndFinish()}
+                  >
+                    {busy ? 'Checking…' : 'Open dashboard'}
+                  </button>
+                  <button className="btn btn-ghost" onClick={() => setStep(2)}>
+                    Back
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   )

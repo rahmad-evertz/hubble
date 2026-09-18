@@ -6,6 +6,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light dark" />
     <title>Hubble</title>
+    <script>
+      // Resolve and stamp the theme before first paint. Without this the first
+      // frame always renders with no data-theme, so a saved dark theme flashes
+      // light. It is also what lets index.css key every dark rule off the
+      // attribute alone instead of duplicating it under a media query.
+      try {
+        var stored = JSON.parse(localStorage.getItem('hubble.theme') || '"system"')
+        var dark =
+          stored === 'dark' ||
+          (stored !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+        document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light')
+      } catch (e) {
+        // Storage blocked or matchMedia missing. The bare :root tier renders a
+        // correct light page, and useTheme stamps the real value on mount.
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

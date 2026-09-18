@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { usePrDetail, type PrMutationEffect, type PrDetailData } from '../hooks/usePrDetail'
 import { type Credentials } from '../api/client'
 import type { PullRequest } from '../types'
@@ -25,8 +25,42 @@ export default function PrDetailModal({ pr, creds, viewerLogin, onClose, onMutat
 
   const [pendingAction, setPendingAction] = useState<PendingAction>(null)
   const [actionBody, setActionBody] = useState('')
+  /** Separate from actionBody: they are different composers on screen at once. */
+  const [commentBody, setCommentBody] = useState('')
+  const [commentError, setCommentError] = useState<string | null>(null)
+  const [conversationOpen, setConversationOpen] = useState(true)
   const [reviewChoice, setReviewChoice] = useState<'REQUEST_CHANGES' | 'COMMENT'>('REQUEST_CHANGES')
   const [actionError, setActionError] = useState<string | null>(null)
+
+  // The exit animation is owned here rather than in App, because this is where
+  // the animation lives. App's selectedPrId still flips to null exactly once,
+  // just one frame later.
+  const [closing, setClosing] = useState(false)
+  const closedRef = useRef(false)
+
+  const finishClose = useCallback(() => {
+    if (closedRef.current) return
+    closedRef.current = true
+    onClose()
+  }, [onClose])
+
+  const requestClose = useCallback(() => setClosing(true), [])
+
+  useEffect(() => {
+    if (!closing) return
+    // animationend never arrives if animations are disabled outright, and the
+    // modal still has to close.
+    const timer = window.setTimeout(finishClose, 400)
+    return () => window.clearTimeout(timer)
+  }, [closing, finishClose])
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') requestClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [requestClose])
 
   const threadsByPath = useMemo(() => {
     if (!detail.data) return new Map<string, PrDetailData['reviewThreads']>()
@@ -80,14 +114,14 @@ export default function PrDetailModal({ pr, creds, viewerLogin, onClose, onMutat
     try {
       const result = await detail.close(actionBody || undefined)
       if (result.closed) {
-        onClose()
+        requestClose()
       } else if (result.error) {
         setActionError(result.error)
       }
     } catch (e) {
       setActionError(e instanceof Error ? e.message : String(e))
     }
-  }, [detail, actionBody, onClose])
+  }, [detail, actionBody, requestClose])
 
   const canApprove = viewerLogin && pr.authorLogin !== viewerLogin
   const approveDisabledReason = !canApprove ? `You can't approve your own PR` : undefined
@@ -95,8 +129,18 @@ export default function PrDetailModal({ pr, creds, viewerLogin, onClose, onMutat
   const [confirmingClose, setConfirmingClose] = useState(false)
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal modal-lg" onClick={(e) => e.stopPropagation()}>
+    <div
+      className={closing ? 'modal-backdrop is-closing' : 'modal-backdrop'}
+      onClick={requestClose}
+    >
+      <div
+        className={closing ? 'modal modal-lg is-closing' : 'modal modal-lg'}
+        onClick={(e) => e.stopPropagation()}
+        onAnimationEnd={(e) => {
+          // Child animations bubble here, so only the panel's own exit counts.
+          if (closing && e.target === e.currentTarget) finishClose()
+        }}
+      >
         <div className="modal-head">
           <div className="pr-detail-title">
             <h2>{detail.data?.title ?? pr.title}</h2>
@@ -120,7 +164,7 @@ export default function PrDetailModal({ pr, creds, viewerLogin, onClose, onMutat
               )}
             </div>
           </div>
-          <button className="btn btn-sm btn-ghost" onClick={onClose}>
+          <button className="btn btn-sm btn-ghost" onClick={requestClose}>
             Close
           </button>
         </div>
@@ -135,7 +179,7 @@ export default function PrDetailModal({ pr, creds, viewerLogin, onClose, onMutat
                 disabled={detail.mutating}
               />
               {actionError && <div className="alert alert-error">{actionError}</div>}
-              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+              <div className="row-actions">
                 <button
                   className="btn btn-sm"
                   onClick={() => setPendingAction(null)}
@@ -181,7 +225,7 @@ export default function PrDetailModal({ pr, creds, viewerLogin, onClose, onMutat
                 disabled={detail.mutating}
               />
               {actionError && <div className="alert alert-error">{actionError}</div>}
-              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+              <div className="row-actions">
                 <button
                   className="btn btn-sm"
                   onClick={() => setPendingAction(null)}
@@ -226,7 +270,7 @@ export default function PrDetailModal({ pr, creds, viewerLogin, onClose, onMutat
                     disabled={detail.mutating}
                   />
                   {actionError && <div className="alert alert-error">{actionError}</div>}
-                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                  <div className="row-actions">
                     <button
                       className="btn btn-sm"
                       onClick={() => setConfirmingClose(false)}
@@ -246,7 +290,7 @@ export default function PrDetailModal({ pr, creds, viewerLogin, onClose, onMutat
               )}
             </div>
           ) : (
-            <div style={{ display: 'flex', gap: '8px' }}>
+            <div className="row-actions row-actions-start">
               <button
                 className="btn btn-success"
                 onClick={() => setPendingAction('approve')}
@@ -311,9 +355,7 @@ export default function PrDetailModal({ pr, creds, viewerLogin, onClose, onMutat
                     −{detail.data.files.reduce((a, f) => a + f.deletions, 0)}
                   </span>
                 )}
-                {detail.data.filesTruncated && (
-                  <span style={{ color: 'var(--fg-subtle)' }}>and more…</span>
-                )}
+                {detail.data.filesTruncated && <span className="absent">and more…</span>}
               </div>
 
               {detail.data.files.map((file) => (
@@ -327,16 +369,23 @@ export default function PrDetailModal({ pr, creds, viewerLogin, onClose, onMutat
 
               {(detail.data.comments.length > 0 || detail.data.reviews.length > 0) && (
                 <div className="pr-conversation">
-                  <div className="inbox-group-head">
-                    <button className="chevron">▼</button>
+                  <button
+                    className="section-head"
+                    aria-expanded={conversationOpen}
+                    onClick={() => setConversationOpen((v) => !v)}
+                  >
+                    <span className="chevron">{conversationOpen ? '▾' : '▸'}</span>
                     <span>Conversation</span>
-                  </div>
-                  <div className="inbox-group-bar">
+                    <span className="tab-count">
+                      {detail.data.comments.length + detail.data.reviews.length}
+                    </span>
+                  </button>
+                  <div className={conversationOpen ? 'thread-stack' : 'thread-stack is-collapsed'}>
                     {detail.data.comments.map((comment) => (
                       <CommentThread
                         key={comment.id}
                         comments={[comment]}
-                        onReply={() => Promise.resolve()}
+                        onReply={(body) => detail.addComment(body)}
                         replyLabel="Reply"
                       />
                     ))}
@@ -361,35 +410,36 @@ export default function PrDetailModal({ pr, creds, viewerLogin, onClose, onMutat
                 </div>
               )}
 
-              {detail.data.comments.length === 0 && detail.data.reviews.length === 0 && (
-                <div style={{ marginTop: '20px' }}>
-                  <h3>Add a comment</h3>
-                  <textarea
-                    placeholder="Share your thoughts..."
-                    value={actionBody}
-                    onChange={(e) => setActionBody(e.target.value)}
-                    disabled={detail.mutating}
-                    style={{ width: '100%', minHeight: '100px' }}
-                  />
-                  {actionError && <div className="alert alert-error">{actionError}</div>}
-                  <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-                    <button
-                      className="btn btn-primary"
-                      onClick={async () => {
-                        try {
-                          await detail.addComment(actionBody)
-                          setActionBody('')
-                        } catch (e) {
-                          setActionError(e instanceof Error ? e.message : String(e))
-                        }
-                      }}
-                      disabled={detail.mutating || !actionBody.trim()}
-                    >
-                      {detail.mutating ? 'Posting…' : 'Comment'}
-                    </button>
-                  </div>
+              {/* Unconditional. This used to render only when a pull request had
+                  no comments and no reviews at all, so you could not comment on
+                  anything with an existing conversation. */}
+              <div className="pr-comment-form">
+                <h3>Add a comment</h3>
+                <textarea
+                  placeholder="Share your thoughts..."
+                  value={commentBody}
+                  onChange={(e) => setCommentBody(e.target.value)}
+                  disabled={detail.mutating}
+                />
+                {commentError && <div className="alert alert-error">{commentError}</div>}
+                <div className="row-actions">
+                  <button
+                    className="btn btn-primary"
+                    onClick={async () => {
+                      setCommentError(null)
+                      try {
+                        await detail.addComment(commentBody)
+                        setCommentBody('')
+                      } catch (e) {
+                        setCommentError(e instanceof Error ? e.message : String(e))
+                      }
+                    }}
+                    disabled={detail.mutating || !commentBody.trim()}
+                  >
+                    {detail.mutating ? 'Posting…' : 'Comment'}
+                  </button>
                 </div>
-              )}
+              </div>
             </div>
           )}
         </div>

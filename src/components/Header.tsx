@@ -23,7 +23,7 @@ export default function Header({
   onOpenSettings,
 }: Props) {
   return (
-    <header className="header">
+    <header className={loading ? 'header is-loading' : 'header'}>
       <div className="brand">
         Hubble <small>deep field, one org</small>
       </div>
@@ -40,7 +40,7 @@ export default function Header({
         )}
       </div>
 
-      <div className="header-spacer" />
+      <div className="spacer" />
 
       <div className="header-actions">
         {updatedAt && !loading && (

@@ -4,7 +4,7 @@ export type SortKey = 'activity' | 'age'
 
 /**
  * 'activity' matches the server's own sort:updated-desc default, so picking
- * it changes nothing visually. 'age' goes oldest-first — the useful direction
+ * it changes nothing visually. 'age' goes oldest-first, the useful direction
  * for surfacing neglected PRs, not "newest first".
  */
 export function sortPrs(prs: PullRequest[], key: SortKey): PullRequest[] {
@@ -21,7 +21,7 @@ export type RepoGroup = { repo: string; prs: PullRequest[] }
 
 /**
  * Clusters by repo, groups ordered alphabetically. Does not sort within a
- * group — callers run sortPrs first, so the two concerns compose
+ * group: callers run sortPrs first, so the two concerns compose
  * independently instead of one function doing both.
  */
 export function groupByRepo(prs: PullRequest[]): RepoGroup[] {

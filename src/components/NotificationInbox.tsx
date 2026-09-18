@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { reasonLabel, reasonRank } from '../api/notifications'
+import { reasonLabel, reasonRank, reasonTier } from '../api/notifications'
 import { relativeAge } from '../lib/dates'
 import type { NotificationItem } from '../types'
 
@@ -44,7 +44,7 @@ export default function NotificationInbox({
     )
   }, [items, hideBots])
 
-  /** Only what is currently on screen — never the whole account. */
+  /** Only what is currently on screen, never the whole account. */
   const shownIds = useMemo(() => groups.flatMap(([, list]) => list.map((i) => i.id)), [groups])
 
   if (!available) {
@@ -72,7 +72,7 @@ export default function NotificationInbox({
       <div className="panel-head">
         <h2>{items.length} unread</h2>
         <span className="note">grouped by why GitHub notified you</span>
-        <div style={{ flex: 1 }} />
+        <div className="spacer" />
         {botCount > 0 && (
           <button
             className="btn btn-sm btn-ghost"
@@ -120,7 +120,7 @@ export default function NotificationInbox({
       {groups.map(([reason, list]) => {
         const isCollapsed = collapsed[reason] ?? false
         return (
-          <div className="inbox-group" key={reason}>
+          <div className="inbox-group" data-tier={reasonTier(reason)} key={reason}>
             <div className="inbox-group-bar">
               <button
                 className="inbox-group-head"

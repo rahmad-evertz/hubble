@@ -23,7 +23,7 @@ function resolve(ctx: QueryContext): Scoped {
 /**
  * The four panels. `is:open` is load-bearing: without it these return lifetime
  * totals, and review-requested in particular accumulates forever through team
- * membership — thousands of rows where tens are meant.
+ * membership: thousands of rows where tens are meant.
  */
 export function openPrQueries(ctx: QueryContext): Record<PanelKey, string> {
   const { user, scope } = resolve(ctx)
@@ -38,7 +38,7 @@ export function openPrQueries(ctx: QueryContext): Record<PanelKey, string> {
 
 /**
  * Exact count for the merged "My PRs" tab (authored ∪ assigned). Summing the
- * `mine` and `assigned` panel totals double-counts a PR that is both — this
+ * `mine` and `assigned` panel totals double-counts a PR that is both, so this
  * asks GitHub's search index to dedupe instead, via its documented boolean
  * qualifier syntax, rather than approximating client-side from a page that
  * may not hold every match.
@@ -62,7 +62,7 @@ export type StatsQueries = {
 
 /**
  * Stats are derived entirely from search because `contributionsCollection`
- * reports zeros for anyone whose contributions are all in private repos — it
+ * reports zeros for anyone whose contributions are all in private repos: it
  * moves the real number into `restrictedContributionsCount` and blanks every
  * breakdown field. Search has no such blind spot.
  */
