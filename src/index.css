@@ -145,6 +145,10 @@
   --depth-3: 34px;
   --depth-4: 60px;
   --perspective: 1400px;
+  /* A separate token from --perspective because cards project themselves with
+     the perspective() transform function rather than inheriting a shared 3D
+     context. See the note on .scene-stage. */
+  --card-perspective: 1400px;
   --tilt-max: 3deg;
   --parallax-near: 14px;
   --scene-pad: 32px;
@@ -451,8 +455,17 @@ body::after {
   padding: var(--scene-pad);
 }
 
+/* Deliberately NOT transform-style: preserve-3d.
+   Chromium resolves hit testing inside a 3D rendering context to the context
+   root, so a 3D-transformed child of a preserve-3d element stops receiving
+   pointer events entirely: every point in the deck hit the <ul> and nothing
+   inside a card was clickable, links included. Children project themselves
+   with the perspective() transform function instead, which gives each one its
+   own vanishing point and keeps hit testing intact. The visible difference is
+   that receding cards scale in place rather than drifting toward one shared
+   vanishing point, which on a vertical stack of full-width cards is not a
+   difference you can see. */
 .scene-stage {
-  transform-style: preserve-3d;
   --tilt-x: calc(var(--py, 0) * var(--tilt-max) * -1);
   --tilt-y: calc(var(--px, 0) * var(--tilt-max));
   transform: rotateX(var(--tilt-x)) rotateY(var(--tilt-y));
@@ -817,13 +830,14 @@ th.num {
 }
 
 .deck-stack {
-  transform-style: preserve-3d;
   margin: 0;
   padding: 0;
   list-style: none;
-  /* One promoted layer, on the only element that moves continuously. Forty
-     promoted cards would be a layer explosion, and will-change: opacity or
-     filter on anything in here would force transform-style: flat. */
+}
+
+/* One promoted layer, on the only element that moves continuously. Promoting
+   all forty cards instead would be a layer explosion. */
+.deck-stage {
   will-change: transform;
 }
 
@@ -842,7 +856,7 @@ th.num {
   /* Shrink toward the bottom edge, so the strip peeking below the card in
      front stays a constant height all the way down the stack. */
   transform-origin: 50% 100%;
-  transform: translate3d(var(--tx), 0, var(--tz));
+  transform: perspective(var(--card-perspective)) translate3d(var(--tx), 0, var(--tz));
   /* Never fully transparent, and urgency raises the floor. */
   opacity: max(calc(0.42 + var(--urgency) * 0.25), calc(1 - var(--d) * 0.055));
   transition:
@@ -2182,12 +2196,12 @@ table.prs tbody tr:focus-visible {
   padding: 40px 16px;
   color: var(--fg-subtle);
   text-align: center;
-  /* Its own perspective: the rows recede as a stack, and this container is
-     short and never scrolls, so the vanishing point is stable. */
-  perspective: 800px;
 }
 
+/* The perspective belongs here, not on .skeleton: it applies to an element's
+   children, and the rows are grandchildren of that. */
 .skeleton-rows {
+  perspective: 800px;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -2261,6 +2275,7 @@ table.prs tbody tr:focus-visible {
   background: linear-gradient(90deg, transparent, var(--purple), transparent);
   background-size: 40% 100%;
   background-repeat: no-repeat;
+  pointer-events: none;
   opacity: 0;
 }
 
@@ -2301,6 +2316,7 @@ table.prs tbody tr:focus-visible {
   content: '';
   position: absolute;
   inset: 0;
+  pointer-events: none;
   border: 1px solid var(--border-subtle);
   border-radius: 10px;
   background: color-mix(in srgb, var(--bg-subtle) 55%, transparent);
@@ -2327,6 +2343,7 @@ table.prs tbody tr:focus-visible {
 
 .setup-card {
   position: relative;
+  z-index: 1;
   animation: hub-overlay-in var(--dur-5) var(--ease-out);
 }
 
@@ -2386,6 +2403,7 @@ table.prs tbody tr:focus-visible {
   position: absolute;
   inset: -1px auto auto 0;
   height: 2px;
+  pointer-events: none;
   width: calc(var(--quota, 1) * 100%);
   background: color-mix(in srgb, var(--danger), var(--success) calc(var(--quota, 1) * 100%));
   transition: width var(--dur-4) var(--ease-out);
