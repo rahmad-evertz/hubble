@@ -931,6 +931,13 @@ th.num {
 
 .pr-card-spine .pr-title {
   flex: 1;
+  /* A flex item defaults to min-width: auto, so it refuses to shrink below its
+     min-content width. One long unbreakable token in a title (an identifier, a
+     pasted URL) then pushes the status dots clean outside the card, which has
+     no overflow of its own so the lift is not clipped. overflow-wrap: anywhere
+     rather than break-word, because only anywhere also shrinks min-content. */
+  min-width: 0;
+  overflow-wrap: anywhere;
   font-size: 14px;
   font-weight: 500;
 }
