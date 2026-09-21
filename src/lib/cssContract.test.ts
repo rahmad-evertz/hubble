@@ -13,12 +13,19 @@ const css = readFileSync(new URL('../index.css', import.meta.url), 'utf8')
 
 type Rule = { selector: string; body: string }
 
+/** Comments go first, over the whole source. Stripping them only from
+ *  selectors would let a commented-out declaration inside a rule body satisfy
+ *  one of these assertions without doing anything. */
+function stripComments(source: string): string {
+  return source.replace(/\/\*[\s\S]*?\*\//g, '')
+}
+
 function rules(source: string): Rule[] {
   const out: Rule[] = []
   const re = /([^{}]+)\{([^{}]*)\}/g
   let match: RegExpExecArray | null
-  while ((match = re.exec(source)) !== null) {
-    const selector = match[1].replace(/\/\*[\s\S]*?\*\//g, '').trim()
+  while ((match = re.exec(stripComments(source))) !== null) {
+    const selector = match[1].trim()
     if (selector && !selector.startsWith('@')) out.push({ selector, body: match[2] })
   }
   return out
@@ -29,6 +36,11 @@ const all = rules(css)
 describe('index.css interaction contract', () => {
   it('finds rules at all, so a parser change cannot silently pass everything', () => {
     expect(all.length).toBeGreaterThan(100)
+  })
+
+  it('does not count a commented-out declaration as satisfying the contract', () => {
+    const [rule] = rules('.x::after { position: absolute; /* pointer-events: none; */ }')
+    expect(rule.body).not.toContain('pointer-events')
   })
 
   it('opts every positioned decoration out of pointer events', () => {
