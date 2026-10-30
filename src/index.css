@@ -1907,12 +1907,30 @@ table.diff td {
   background: var(--row-tint);
 }
 
+/* Mixed from the solid --success / --danger rather than the -bg tokens: those
+   are already near-white, so any blend of them into --bg was indistinguishable
+   from a context line. The gutter takes a stronger tint, as GitHub's does, so
+   a changed line still reads when the content is scrolled sideways. */
 .diff-line-add {
-  --row-tint: color-mix(in srgb, var(--success-bg) 30%, var(--bg));
+  --row-tint: color-mix(in srgb, var(--success) 15%, var(--bg));
+  --gutter-tint: color-mix(in srgb, var(--success) 28%, var(--bg));
+  --sign-color: var(--success);
 }
 
 .diff-line-del {
-  --row-tint: color-mix(in srgb, var(--danger-bg) 30%, var(--bg));
+  --row-tint: color-mix(in srgb, var(--danger) 13%, var(--bg));
+  --gutter-tint: color-mix(in srgb, var(--danger) 25%, var(--bg));
+  --sign-color: var(--danger);
+}
+
+.diff-line-add .diff-gutter,
+.diff-line-del .diff-gutter {
+  background: var(--gutter-tint);
+}
+
+.diff-line-add .diff-sign,
+.diff-line-del .diff-sign {
+  color: var(--sign-color);
 }
 
 .diff-hunk-head {
