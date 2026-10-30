@@ -1,7 +1,7 @@
 import { prFacts, ROLE_BADGE } from '../lib/prFacts'
 import type { RepoGroup } from '../lib/sortPrs'
 import RepoGroupHead from './RepoGroupHead'
-import type { AppConfig, PullRequest } from '../types'
+import type { PullRequest } from '../types'
 
 const MAX_AVATARS = 3
 /** Repository, #, Title, You, Review, CI, Conflict, Waiting on, Age, Activity, Size. */
@@ -13,7 +13,6 @@ type Props = {
   groups: RepoGroup[] | null
   collapsedRepos: Record<string, boolean>
   onToggleRepo: (repo: string) => void
-  config: AppConfig
   onOpen?: (pr: PullRequest) => void
   onArchiveRepo: (repo: string) => void
 }
@@ -23,7 +22,6 @@ export default function PrTable({
   groups,
   collapsedRepos,
   onToggleRepo,
-  config,
   onOpen,
   onArchiveRepo,
 }: Props) {
@@ -56,11 +54,11 @@ export default function PrTable({
                   collapsed={collapsedRepos[group.repo] ?? false}
                   onToggle={() => onToggleRepo(group.repo)}
                   onArchive={() => onArchiveRepo(group.repo)}
-                  config={config}
+
                   onOpen={onOpen}
                 />
               ))
-            : prs.map((pr) => <Row key={pr.id} pr={pr} config={config} onOpen={onOpen} showRepo />)}
+            : prs.map((pr) => <Row key={pr.id} pr={pr} onOpen={onOpen} showRepo />)}
         </tbody>
       </table>
     </div>
@@ -72,14 +70,12 @@ function RepoGroupRows({
   collapsed,
   onToggle,
   onArchive,
-  config,
   onOpen,
 }: {
   group: RepoGroup
   collapsed: boolean
   onToggle: () => void
   onArchive: () => void
-  config: AppConfig
   onOpen?: (pr: PullRequest) => void
 }) {
   return (
@@ -96,25 +92,21 @@ function RepoGroupRows({
         </td>
       </tr>
       {!collapsed &&
-        group.prs.map((pr) => (
-          <Row key={pr.id} pr={pr} config={config} onOpen={onOpen} showRepo={false} />
-        ))}
+        group.prs.map((pr) => <Row key={pr.id} pr={pr} onOpen={onOpen} showRepo={false} />)}
     </>
   )
 }
 
 function Row({
   pr,
-  config,
   onOpen,
   showRepo,
 }: {
   pr: PullRequest
-  config: AppConfig
   onOpen?: (pr: PullRequest) => void
   showRepo: boolean
 }) {
-  const f = prFacts(pr, config)
+  const f = prFacts(pr)
 
   return (
     <tr
@@ -148,16 +140,6 @@ function Row({
           {pr.isDraft && <span className="badge badge-neutral">Draft</span>}
           {f.authorLabel && <span>{f.authorLabel}</span>}
           {f.ownReview && <span>{f.ownReview}</span>}
-          {f.ticket && (
-            <a
-              href={f.ticket.href}
-              target="_blank"
-              rel="noreferrer"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {f.ticket.key}
-            </a>
-          )}
         </div>
       </td>
       <td>

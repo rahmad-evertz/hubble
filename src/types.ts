@@ -4,10 +4,6 @@ export type AppConfig = {
   username: string
   org: string
   apiBaseUrl: string
-  /** Optional issue-key linking, e.g. "([A-Z]{2,}-\\d+)". Empty = feature off. */
-  ticketPattern: string
-  /** Base URL the extracted key is appended to. Empty = feature off. */
-  ticketBaseUrl: string
 }
 
 export type PanelKey = 'mine' | 'requested' | 'assigned' | 'mentioned'

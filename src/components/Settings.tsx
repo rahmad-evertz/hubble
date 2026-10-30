@@ -26,8 +26,6 @@ export default function Settings({
   const [username, setUsername] = useState(config.username)
   const [org, setOrg] = useState(config.org)
   const [minutes, setMinutes] = useState(refreshMinutes)
-  const [ticketPattern, setTicketPattern] = useState(config.ticketPattern)
-  const [ticketBaseUrl, setTicketBaseUrl] = useState(config.ticketBaseUrl)
   const [archived, setArchived] = useState(archivedRepos)
   const [error, setError] = useState<string | null>(null)
 
@@ -65,21 +63,11 @@ export default function Settings({
       setError('That is not a valid organisation name.')
       return
     }
-    if (ticketPattern) {
-      try {
-        new RegExp(ticketPattern)
-      } catch {
-        setError('The issue-key pattern is not a valid regular expression.')
-        return
-      }
-    }
     onSave(
       {
         ...config,
         username: username.trim(),
         org: org.trim(),
-        ticketPattern: ticketPattern.trim(),
-        ticketBaseUrl: ticketBaseUrl.trim(),
       },
       minutes,
       archived,
@@ -151,34 +139,6 @@ export default function Settings({
               Notification polling is additionally clamped to the minimum interval GitHub
               advertises.
             </div>
-          </div>
-
-          <div className="field">
-            <label htmlFor="s-pattern">Issue-key pattern (optional)</label>
-            <input
-              id="s-pattern"
-              type="text"
-              value={ticketPattern}
-              spellCheck={false}
-              placeholder="([A-Z]{2,}-\d+)"
-              onChange={(e) => setTicketPattern(e.target.value)}
-            />
-            <div className="hint">
-              A regular expression matched against each pull-request title. With a base URL below,
-              the first capture group becomes a link to your issue tracker.
-            </div>
-          </div>
-
-          <div className="field">
-            <label htmlFor="s-base">Issue tracker base URL (optional)</label>
-            <input
-              id="s-base"
-              type="text"
-              value={ticketBaseUrl}
-              spellCheck={false}
-              placeholder="https://tracker.example.com/browse"
-              onChange={(e) => setTicketBaseUrl(e.target.value)}
-            />
           </div>
 
           <div className="field">

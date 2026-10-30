@@ -3,7 +3,7 @@ import { deckLayout, type DeckCard } from '../lib/deckLayout'
 import { prFacts, ROLE_BADGE } from '../lib/prFacts'
 import type { RepoGroup } from '../lib/sortPrs'
 import RepoGroupHead from './RepoGroupHead'
-import type { AppConfig, PullRequest } from '../types'
+import type { PullRequest } from '../types'
 
 const MAX_AVATARS = 3
 
@@ -18,7 +18,6 @@ type Props = {
   groups: RepoGroup[] | null
   collapsedRepos: Record<string, boolean>
   onToggleRepo: (repo: string) => void
-  config: AppConfig
   onOpen?: (pr: PullRequest) => void
   onArchiveRepo: (repo: string) => void
 }
@@ -28,12 +27,11 @@ export default function PrDeck({
   groups,
   collapsedRepos,
   onToggleRepo,
-  config,
   onOpen,
   onArchiveRepo,
 }: Props) {
   if (!groups) {
-    return <DeckShelf prs={prs} repo={null} config={config} onOpen={onOpen} showRepo />
+    return <DeckShelf prs={prs} repo={null} onOpen={onOpen} showRepo />
   }
 
   return (
@@ -46,7 +44,7 @@ export default function PrDeck({
           collapsed={collapsedRepos[group.repo] ?? false}
           onToggle={() => onToggleRepo(group.repo)}
           onArchive={() => onArchiveRepo(group.repo)}
-          config={config}
+
           onOpen={onOpen}
           showRepo={false}
         />
@@ -65,7 +63,6 @@ function DeckShelf({
   collapsed = false,
   onToggle,
   onArchive,
-  config,
   onOpen,
   showRepo,
 }: {
@@ -74,7 +71,6 @@ function DeckShelf({
   collapsed?: boolean
   onToggle?: () => void
   onArchive?: () => void
-  config: AppConfig
   onOpen?: (pr: PullRequest) => void
   showRepo: boolean
 }) {
@@ -103,7 +99,7 @@ function DeckShelf({
                   key={pr.id}
                   pr={pr}
                   card={layout[i]}
-                  config={config}
+
                   onOpen={onOpen}
                   showRepo={showRepo}
                 />
@@ -119,17 +115,15 @@ function DeckShelf({
 function PrCard({
   pr,
   card,
-  config,
   onOpen,
   showRepo,
 }: {
   pr: PullRequest
   card: DeckCard
-  config: AppConfig
   onOpen?: (pr: PullRequest) => void
   showRepo: boolean
 }) {
-  const f = prFacts(pr, config)
+  const f = prFacts(pr)
 
   return (
     <li className="pr-card" style={cardVars(card)}>
@@ -170,11 +164,6 @@ function PrCard({
         {pr.isDraft && <span className="badge badge-neutral">Draft</span>}
         {f.authorLabel && <span>{f.authorLabel}</span>}
         {f.ownReview && <span>{f.ownReview}</span>}
-        {f.ticket && (
-          <a href={f.ticket.href} target="_blank" rel="noreferrer">
-            {f.ticket.key}
-          </a>
-        )}
         <span className={`num ${f.ageClass}`} title="Opened">
           {f.age}
         </span>

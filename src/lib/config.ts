@@ -9,8 +9,6 @@ export const BLANK_CONFIG: AppConfig = {
   username: '',
   org: '',
   apiBaseUrl: DEFAULT_API_BASE,
-  ticketPattern: '',
-  ticketBaseUrl: '',
 }
 
 /**

@@ -255,7 +255,6 @@ export default function App() {
                     ? combinePanelPrs(panels.data, MINE_PANELS)
                     : panels.data.panels[tab as PanelKey].prs,
                 )}
-                config={config}
                 emptyTitle={EMPTY_COPY[tab as PanelKey].title}
                 emptyBody={EMPTY_COPY[tab as PanelKey].body}
                 onOpen={(pr) => setSelectedPrId(pr.id)}

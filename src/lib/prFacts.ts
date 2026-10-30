@@ -1,5 +1,5 @@
-import type { AppConfig, PrRole, PullRequest, ReviewState } from '../types'
-import { ageSeverity, extractTicket, ticketUrl } from './classify'
+import type { PrRole, PullRequest, ReviewState } from '../types'
+import { ageSeverity } from './classify'
 import { daysSince, relativeAge } from './dates'
 
 export const ROLE_BADGE: Record<PrRole, { label: string; className: string }> = {
@@ -32,7 +32,6 @@ export type PrFacts = {
   ciClass: string
   ciTitle: string
   hasConflict: boolean
-  ticket: { key: string; href: string } | null
   review: { label: string; className: string } | null
   ownReview: string | undefined
 }
@@ -43,8 +42,7 @@ export type PrFacts = {
  * project's node-environment test setup, which a shared JSX component would
  * not be.
  */
-export function prFacts(pr: PullRequest, config: AppConfig, now: Date = new Date()): PrFacts {
-  const ticketKey = extractTicket(pr.title, config.ticketPattern)
+export function prFacts(pr: PullRequest, now: Date = new Date()): PrFacts {
   return {
     repoName: pr.repo.split('/')[1] ?? pr.repo,
     authorLabel: pr.authorLogin ? `${pr.authorLogin}${pr.authorIsBot ? ' (bot)' : ''}` : null,
@@ -55,10 +53,6 @@ export function prFacts(pr: PullRequest, config: AppConfig, now: Date = new Date
     ciClass: `ci-${pr.checkState ?? 'NONE'}`,
     ciTitle: pr.checkState ? `Checks: ${pr.checkState}` : 'No checks reported',
     hasConflict: pr.mergeable === 'CONFLICTING',
-    ticket:
-      ticketKey && config.ticketBaseUrl
-        ? { key: ticketKey, href: ticketUrl(ticketKey, config.ticketBaseUrl) }
-        : null,
     review: pr.reviewDecision ? (REVIEW_BADGE[pr.reviewDecision] ?? null) : null,
     ownReview: pr.userLatestReview ? OWN_REVIEW_LABEL[pr.userLatestReview] : undefined,
   }
