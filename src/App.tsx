@@ -17,9 +17,10 @@ import { useAutoRefresh } from './hooks/useAutoRefresh'
 import { useNotifications } from './hooks/useNotifications'
 import { usePointerParallax } from './hooks/usePointerParallax'
 import { useTheme } from './hooks/useTheme'
+import { loadArchivedRepos, saveArchivedRepos } from './lib/archive'
 import { BLANK_CONFIG, clearConfig, isConfigured, loadConfig, saveConfig } from './lib/config'
 import * as storage from './lib/storage'
-import type { AppConfig, PanelKey, PrMutationEffect } from './types'
+import type { AppConfig, PanelKey, PrMutationEffect, PullRequest } from './types'
 
 type TabKey = PanelKey | 'inbox' | 'stats'
 
@@ -68,6 +69,7 @@ export default function App() {
   /** Stats cost a request, so they are not fetched until the tab is first opened. */
   const [statsRequested, setStatsRequested] = useState(() => initialTab() === 'stats')
   const [selectedPrId, setSelectedPrId] = useState<string | null>(null)
+  const [archivedRepos, setArchivedRepos] = useState(loadArchivedRepos)
 
   // Above the early returns below, so the setup and loading routes are covered
   // as well. Writes CSS custom properties on <html>; never re-renders.
@@ -93,6 +95,9 @@ export default function App() {
     [config?.username, config?.org],
   )
   const scopeKey = `${creds.token}|${queryCtx.username}|${queryCtx.org}`
+  const panelsCtx = useMemo(() => ({ ...queryCtx, archivedRepos }), [queryCtx, archivedRepos])
+  // Stats keep scopeKey, so archiving a repo never refetches them.
+  const panelsKey = `${scopeKey}|${archivedRepos.join(',')}`
 
   // Resolve the token's own account, which decides whether the inbox is meaningful.
   useEffect(() => {
@@ -106,10 +111,29 @@ export default function App() {
     }
   }, [ready, creds])
 
-  const panels = useAsync(() => fetchPanels(queryCtx, creds), scopeKey, ready)
+  const panels = useAsync(() => fetchPanels(panelsCtx, creds), panelsKey, ready)
   const stats = useAsync(() => fetchStats(queryCtx, creds), scopeKey, ready && statsRequested)
   const inboxAvailable = viewerLogin !== null && viewerLogin === queryCtx.username
   const notifications = useNotifications(creds, queryCtx.org, ready && inboxAvailable)
+
+  const updateArchivedRepos = useCallback((repos: string[]) => {
+    setArchivedRepos(saveArchivedRepos(repos))
+  }, [])
+
+  const archiveRepo = useCallback(
+    (repo: string) => {
+      updateArchivedRepos([...archivedRepos, repo])
+      setSelectedPrId(null)
+    },
+    [archivedRepos, updateArchivedRepos],
+  )
+
+  // The refetch excludes archived repos server-side; this hides them in the
+  // meantime, so archiving takes effect on the click rather than a round trip.
+  const visiblePrs = useCallback(
+    (prs: PullRequest[]) => prs.filter((pr) => !archivedRepos.includes(pr.repo)),
+    [archivedRepos],
+  )
 
   const selectedPr = selectedPrId
     ? (panels.data?.all.find((p) => p.id === selectedPrId) ?? null)
@@ -226,15 +250,16 @@ export default function App() {
           {PANEL_KEYS.includes(tab as PanelKey) &&
             (panels.data ? (
               <PrList
-                prs={
+                prs={visiblePrs(
                   tab === 'mine'
                     ? combinePanelPrs(panels.data, MINE_PANELS)
-                    : panels.data.panels[tab as PanelKey].prs
-                }
+                    : panels.data.panels[tab as PanelKey].prs,
+                )}
                 config={config}
                 emptyTitle={EMPTY_COPY[tab as PanelKey].title}
                 emptyBody={EMPTY_COPY[tab as PanelKey].body}
                 onOpen={(pr) => setSelectedPrId(pr.id)}
+                onArchiveRepo={archiveRepo}
               />
             ) : (
               <Skeleton label="Loading pull requests…" rows={8} />
@@ -267,11 +292,13 @@ export default function App() {
           config={config}
           refreshMinutes={refreshMinutes}
           viewerLogin={viewerLogin}
-          onSave={(next, minutes) => {
+          archivedRepos={archivedRepos}
+          onSave={(next, minutes, archived) => {
             saveConfig(next)
             setConfig(next)
             storage.write('refreshMinutes', minutes)
             setRefreshMinutes(minutes)
+            updateArchivedRepos(archived)
             setShowSettings(false)
           }}
           onSignOut={signOut}
@@ -287,6 +314,7 @@ export default function App() {
           viewerLogin={viewerLogin}
           onClose={() => setSelectedPrId(null)}
           onMutated={handlePrMutated}
+          onArchiveRepo={archiveRepo}
         />
       )}
     </div>

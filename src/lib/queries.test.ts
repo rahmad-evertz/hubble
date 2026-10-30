@@ -95,6 +95,34 @@ describe('myPrsQuery', () => {
   })
 })
 
+describe('archived repos', () => {
+  const archived = { ...ctx, archivedRepos: ['acme-inc/noisy', 'acme-inc/docs.site'] }
+
+  it('excludes every archived repo from each panel and the My PRs count', () => {
+    const queries = [...Object.values(openPrQueries(archived)), myPrsQuery(archived)]
+    for (const query of queries) {
+      expect(query).toContain(' -repo:acme-inc/noisy')
+      expect(query).toContain(' -repo:acme-inc/docs.site')
+    }
+  })
+
+  it('leaves the queries unchanged when nothing is archived', () => {
+    expect(openPrQueries({ ...ctx, archivedRepos: [] })).toEqual(openPrQueries(ctx))
+  })
+
+  it('does not apply to stats, which describe contribution history', () => {
+    const q = statsQueries(archived, ['2026-01'])
+    expect(JSON.stringify(q)).not.toContain('-repo:')
+  })
+
+  it.each(['acme-inc/has space', 'no-slash', 'a/b/c', 'acme-inc/x author:someone'])(
+    'rejects %j rather than splicing it into the query',
+    (bad) => {
+      expect(() => openPrQueries({ ...ctx, archivedRepos: [bad] })).toThrow()
+    },
+  )
+})
+
 describe('monthAlias', () => {
   it('produces a legal GraphQL alias', () => {
     expect(monthAlias('merged', '2026-07')).toBe('merged_2026_07')

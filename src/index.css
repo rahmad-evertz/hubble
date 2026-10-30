@@ -695,10 +695,35 @@ table.prs tbody tr:last-child td {
   background: var(--bg-subtle);
 }
 
-.repo-group-head {
+.repo-group-bar {
   display: flex;
   align-items: center;
+}
+.repo-group-bar:hover {
+  background: var(--bg-inset);
+}
+/* Revealed on hover or focus so a page of group headers does not read as a
+   column of buttons. Never display: none, which would drop it from tab order. */
+.repo-group-bar .repo-archive {
+  margin-right: 6px;
+  opacity: 0;
+}
+.repo-group-bar:hover .repo-archive,
+.repo-group-bar .repo-archive:focus-visible {
+  opacity: 1;
+}
+@media (hover: none) {
+  .repo-group-bar .repo-archive {
+    opacity: 1;
+  }
+}
+
+.repo-group-head {
+  display: flex;
+  flex: 1;
+  align-items: center;
   gap: 8px;
+  min-width: 0;
   width: 100%;
   padding: 8px 10px;
   background: none;
@@ -707,9 +732,6 @@ table.prs tbody tr:last-child td {
   font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
-}
-.repo-group-head:hover {
-  background: var(--bg-inset);
 }
 .repo-group-head .chevron {
   color: var(--fg-subtle);
@@ -968,7 +990,7 @@ th.num {
   padding: 4px;
 }
 
-.deck-shelf > .repo-group-head {
+.deck-shelf > .repo-group-bar .repo-group-head {
   padding: 8px 12px;
 }
 
@@ -1305,6 +1327,19 @@ th.num {
   font-size: 13px;
   font-weight: 600;
 }
+.archived-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.archived-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 4px 0;
+}
+
 .field .hint {
   margin-top: 5px;
   color: var(--fg-muted);

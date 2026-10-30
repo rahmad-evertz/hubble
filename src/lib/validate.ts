@@ -19,6 +19,15 @@ export function assertValidLogin(value: string, label: string): string {
   return value
 }
 
+const REPO_NAME = /^[A-Za-z0-9._-]{1,100}$/
+
+/** `owner/name`, as GraphQL's `nameWithOwner` reports it. Interpolated into
+ *  search queries like a login, so it gets the same strictness. */
+export function isValidRepo(value: string): boolean {
+  const [owner, name, ...rest] = value.split('/')
+  return rest.length === 0 && isValidLogin(owner) && name !== undefined && REPO_NAME.test(name)
+}
+
 /** A classic PAT is ghp_…; older tokens are 40 hex chars. Kept loose on purpose. */
 export function looksLikeToken(value: string): boolean {
   return value.trim().length >= 20 && !/\s/.test(value.trim())

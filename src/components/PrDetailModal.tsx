@@ -11,11 +11,19 @@ type Props = {
   viewerLogin: string | null
   onClose: () => void
   onMutated: (prId: string, effect: PrMutationEffect) => void
+  onArchiveRepo: (repo: string) => void
 }
 
 type PendingAction = 'approve' | 'review' | 'close' | null
 
-export default function PrDetailModal({ pr, creds, viewerLogin, onClose, onMutated }: Props) {
+export default function PrDetailModal({
+  pr,
+  creds,
+  viewerLogin,
+  onClose,
+  onMutated,
+  onArchiveRepo,
+}: Props) {
   const detail = usePrDetail(
     { id: pr.id, repo: pr.repo, number: pr.number },
     creds,
@@ -164,6 +172,13 @@ export default function PrDetailModal({ pr, creds, viewerLogin, onClose, onMutat
               )}
             </div>
           </div>
+          <button
+            className="btn btn-sm btn-ghost"
+            title={`Hide every pull request in ${pr.repo}. Undo it in Settings.`}
+            onClick={() => onArchiveRepo(pr.repo)}
+          >
+            Archive repo
+          </button>
           <button className="btn btn-sm btn-ghost" onClick={requestClose}>
             Close
           </button>

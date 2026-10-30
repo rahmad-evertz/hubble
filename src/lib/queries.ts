@@ -1,6 +1,6 @@
 import type { PanelKey } from '../types'
 import { monthRange } from './dates'
-import { assertValidLogin } from './validate'
+import { assertValidLogin, isValidRepo } from './validate'
 
 /**
  * Every GitHub search string the app issues is built here, from nothing but a
@@ -8,7 +8,12 @@ import { assertValidLogin } from './validate'
  * is unit-testable without a network, and it is the reason no organisation or
  * user is hard-coded anywhere in the source.
  */
-export type QueryContext = { username: string; org: string }
+export type QueryContext = {
+  username: string
+  org: string
+  /** owner/name repos left out of the open-PR panels. Stats ignore it. */
+  archivedRepos?: string[]
+}
 
 type Scoped = { user: string; scope: string }
 
@@ -21,13 +26,26 @@ function resolve(ctx: QueryContext): Scoped {
 }
 
 /**
+ * Excluded in the search itself rather than filtered client-side, so the tab
+ * counts stay exact and an archived repo cannot use up the fetched page.
+ */
+function exclusions(ctx: QueryContext): string {
+  return (ctx.archivedRepos ?? [])
+    .map((repo) => {
+      if (!isValidRepo(repo)) throw new Error(`Archived repo "${repo}" is not a valid owner/name.`)
+      return ` -repo:${repo}`
+    })
+    .join('')
+}
+
+/**
  * The four panels. `is:open` is load-bearing: without it these return lifetime
  * totals, and review-requested in particular accumulates forever through team
  * membership: thousands of rows where tens are meant.
  */
 export function openPrQueries(ctx: QueryContext): Record<PanelKey, string> {
   const { user, scope } = resolve(ctx)
-  const base = `is:pr is:open${scope} sort:updated-desc`
+  const base = `is:pr is:open${scope}${exclusions(ctx)} sort:updated-desc`
   return {
     mine: `${base} author:${user}`,
     requested: `${base} review-requested:${user}`,
@@ -45,7 +63,7 @@ export function openPrQueries(ctx: QueryContext): Record<PanelKey, string> {
  */
 export function myPrsQuery(ctx: QueryContext): string {
   const { user, scope } = resolve(ctx)
-  return `is:pr is:open${scope} sort:updated-desc (author:${user} OR assignee:${user})`
+  return `is:pr is:open${scope}${exclusions(ctx)} sort:updated-desc (author:${user} OR assignee:${user})`
 }
 
 export type MonthlyQueries = { key: string; merged: string; reviewed: string }

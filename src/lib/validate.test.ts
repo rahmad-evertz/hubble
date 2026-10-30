@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { assertValidLogin, isValidLogin, looksLikeToken } from './validate'
+import { assertValidLogin, isValidLogin, isValidRepo, looksLikeToken } from './validate'
 
 describe('isValidLogin', () => {
   it('accepts a plain alphanumeric login', () => {
@@ -56,5 +56,27 @@ describe('looksLikeToken', () => {
 
   it('ignores surrounding whitespace when checking length', () => {
     expect(looksLikeToken(`  ${'a'.repeat(20)}  `)).toBe(true)
+  })
+})
+
+describe('isValidRepo', () => {
+  it.each(['acme-inc/widgets', 'octocat/Hello-World', 'acme/docs.site', 'acme/_private'])(
+    'accepts %j',
+    (repo) => {
+      expect(isValidRepo(repo)).toBe(true)
+    },
+  )
+
+  it.each([
+    '',
+    'acme',
+    'acme/',
+    '/widgets',
+    'acme/wid gets',
+    'acme/a/b',
+    'bad owner/x',
+    'acme/x:y',
+  ])('rejects %j', (repo) => {
+    expect(isValidRepo(repo)).toBe(false)
   })
 })

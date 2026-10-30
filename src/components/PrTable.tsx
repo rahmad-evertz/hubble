@@ -1,5 +1,6 @@
 import { prFacts, ROLE_BADGE } from '../lib/prFacts'
 import type { RepoGroup } from '../lib/sortPrs'
+import RepoGroupHead from './RepoGroupHead'
 import type { AppConfig, PullRequest } from '../types'
 
 const MAX_AVATARS = 3
@@ -14,6 +15,7 @@ type Props = {
   onToggleRepo: (repo: string) => void
   config: AppConfig
   onOpen?: (pr: PullRequest) => void
+  onArchiveRepo: (repo: string) => void
 }
 
 export default function PrTable({
@@ -23,6 +25,7 @@ export default function PrTable({
   onToggleRepo,
   config,
   onOpen,
+  onArchiveRepo,
 }: Props) {
   const showRepo = groups === null
 
@@ -52,6 +55,7 @@ export default function PrTable({
                   group={group}
                   collapsed={collapsedRepos[group.repo] ?? false}
                   onToggle={() => onToggleRepo(group.repo)}
+                  onArchive={() => onArchiveRepo(group.repo)}
                   config={config}
                   onOpen={onOpen}
                 />
@@ -67,26 +71,28 @@ function RepoGroupRows({
   group,
   collapsed,
   onToggle,
+  onArchive,
   config,
   onOpen,
 }: {
   group: RepoGroup
   collapsed: boolean
   onToggle: () => void
+  onArchive: () => void
   config: AppConfig
   onOpen?: (pr: PullRequest) => void
 }) {
-  const [, repoName] = group.repo.split('/')
-
   return (
     <>
       <tr className="repo-group-row">
         <td colSpan={COLUMN_COUNT - 1}>
-          <button className="repo-group-head" aria-expanded={!collapsed} onClick={onToggle}>
-            <span className="chevron">{collapsed ? '▸' : '▾'}</span>
-            {repoName ?? group.repo}
-            <span className="tab-count">{group.prs.length}</span>
-          </button>
+          <RepoGroupHead
+            repo={group.repo}
+            count={group.prs.length}
+            collapsed={collapsed}
+            onToggle={onToggle}
+            onArchive={onArchive}
+          />
         </td>
       </tr>
       {!collapsed &&

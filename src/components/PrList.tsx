@@ -12,6 +12,7 @@ type Props = {
   emptyTitle: string
   emptyBody: string
   onOpen?: (pr: PullRequest) => void
+  onArchiveRepo: (repo: string) => void
 }
 
 /**
@@ -21,7 +22,14 @@ type Props = {
  * escape `overflow: hidden` to lift out of its plane, and only this component
  * knows which view is active.
  */
-export default function PrList({ prs, config, emptyTitle, emptyBody, onOpen }: Props) {
+export default function PrList({
+  prs,
+  config,
+  emptyTitle,
+  emptyBody,
+  onOpen,
+  onArchiveRepo,
+}: Props) {
   const [sortKey, setSortKey] = useState<SortKey>(() => storage.read<SortKey>('prSort', 'activity'))
   const [grouped, setGrouped] = useState(() => storage.read('prGroupByRepo', false))
   const [view, setView] = useState<PrView>(() => storage.read<PrView>('prView', 'deck'))
@@ -64,6 +72,7 @@ export default function PrList({ prs, config, emptyTitle, emptyBody, onOpen }: P
     onToggleRepo: (repo: string) => setCollapsedRepos((prev) => ({ ...prev, [repo]: !prev[repo] })),
     config,
     onOpen,
+    onArchiveRepo,
   }
 
   return (

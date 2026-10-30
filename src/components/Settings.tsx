@@ -8,7 +8,8 @@ type Props = {
   config: AppConfig
   refreshMinutes: number
   viewerLogin: string | null
-  onSave: (config: AppConfig, refreshMinutes: number) => void
+  archivedRepos: string[]
+  onSave: (config: AppConfig, refreshMinutes: number, archivedRepos: string[]) => void
   onSignOut: () => void
   onClose: () => void
 }
@@ -17,6 +18,7 @@ export default function Settings({
   config,
   refreshMinutes,
   viewerLogin,
+  archivedRepos,
   onSave,
   onSignOut,
   onClose,
@@ -26,6 +28,7 @@ export default function Settings({
   const [minutes, setMinutes] = useState(refreshMinutes)
   const [ticketPattern, setTicketPattern] = useState(config.ticketPattern)
   const [ticketBaseUrl, setTicketBaseUrl] = useState(config.ticketBaseUrl)
+  const [archived, setArchived] = useState(archivedRepos)
   const [error, setError] = useState<string | null>(null)
 
   const [closing, setClosing] = useState(false)
@@ -79,6 +82,7 @@ export default function Settings({
         ticketBaseUrl: ticketBaseUrl.trim(),
       },
       minutes,
+      archived,
     )
   }
 
@@ -175,6 +179,34 @@ export default function Settings({
               placeholder="https://tracker.example.com/browse"
               onChange={(e) => setTicketBaseUrl(e.target.value)}
             />
+          </div>
+
+          <div className="field">
+            <label id="s-archived">Archived repos</label>
+            {archived.length === 0 ? (
+              <div className="hint">
+                None. Archive a repo from its group header, or from Archive repo on any pull
+                request, to hide it from every pull-request tab.
+              </div>
+            ) : (
+              <>
+                <ul className="archived-list" aria-labelledby="s-archived">
+                  {archived.map((repo) => (
+                    <li key={repo}>
+                      <span className="cell-repo">{repo}</span>
+                      <button
+                        className="btn btn-sm"
+                        aria-label={`Unarchive ${repo}`}
+                        onClick={() => setArchived((prev) => prev.filter((r) => r !== repo))}
+                      >
+                        Unarchive
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+                <div className="hint">Unarchived repos come back after you save.</div>
+              </>
+            )}
           </div>
 
           {error && <div className="alert alert-error">{error}</div>}

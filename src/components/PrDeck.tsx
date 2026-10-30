@@ -2,6 +2,7 @@ import { useMemo, type CSSProperties } from 'react'
 import { deckLayout, type DeckCard } from '../lib/deckLayout'
 import { prFacts, ROLE_BADGE } from '../lib/prFacts'
 import type { RepoGroup } from '../lib/sortPrs'
+import RepoGroupHead from './RepoGroupHead'
 import type { AppConfig, PullRequest } from '../types'
 
 const MAX_AVATARS = 3
@@ -19,6 +20,7 @@ type Props = {
   onToggleRepo: (repo: string) => void
   config: AppConfig
   onOpen?: (pr: PullRequest) => void
+  onArchiveRepo: (repo: string) => void
 }
 
 export default function PrDeck({
@@ -28,6 +30,7 @@ export default function PrDeck({
   onToggleRepo,
   config,
   onOpen,
+  onArchiveRepo,
 }: Props) {
   if (!groups) {
     return <DeckShelf prs={prs} repo={null} config={config} onOpen={onOpen} showRepo />
@@ -42,6 +45,7 @@ export default function PrDeck({
           repo={group.repo}
           collapsed={collapsedRepos[group.repo] ?? false}
           onToggle={() => onToggleRepo(group.repo)}
+          onArchive={() => onArchiveRepo(group.repo)}
           config={config}
           onOpen={onOpen}
           showRepo={false}
@@ -60,6 +64,7 @@ function DeckShelf({
   repo,
   collapsed = false,
   onToggle,
+  onArchive,
   config,
   onOpen,
   showRepo,
@@ -68,22 +73,24 @@ function DeckShelf({
   repo: string | null
   collapsed?: boolean
   onToggle?: () => void
+  onArchive?: () => void
   config: AppConfig
   onOpen?: (pr: PullRequest) => void
   showRepo: boolean
 }) {
   // Cannot live inside a .map(), which is why a shelf is its own component.
   const layout = useMemo(() => deckLayout(prs), [prs])
-  const [, repoName] = repo ? repo.split('/') : [null, null]
 
   return (
     <div className="deck-shelf">
-      {repo && onToggle && (
-        <button className="repo-group-head" aria-expanded={!collapsed} onClick={onToggle}>
-          <span className="chevron">{collapsed ? '▸' : '▾'}</span>
-          {repoName ?? repo}
-          <span className="tab-count">{prs.length}</span>
-        </button>
+      {repo && onToggle && onArchive && (
+        <RepoGroupHead
+          repo={repo}
+          count={prs.length}
+          collapsed={collapsed}
+          onToggle={onToggle}
+          onArchive={onArchive}
+        />
       )}
       {!collapsed && (
         <div className="deck scene">
