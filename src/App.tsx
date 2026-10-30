@@ -16,6 +16,7 @@ import { useAsync } from './hooks/useAsync'
 import { useAutoRefresh } from './hooks/useAutoRefresh'
 import { useNotifications } from './hooks/useNotifications'
 import { usePointerParallax } from './hooks/usePointerParallax'
+import { useStyle } from './hooks/useStyle'
 import { useTheme } from './hooks/useTheme'
 import { loadArchivedRepos, saveArchivedRepos } from './lib/archive'
 import { BLANK_CONFIG, clearConfig, isConfigured, loadConfig, saveConfig } from './lib/config'
@@ -65,6 +66,7 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false)
   const [refreshMinutes, setRefreshMinutes] = useState(() => storage.read('refreshMinutes', 10))
   const [theme, setTheme] = useTheme()
+  const [style, setStyle] = useStyle()
   const [viewerLogin, setViewerLogin] = useState<string | null>(null)
   /** Stats cost a request, so they are not fetched until the tab is first opened. */
   const [statsRequested, setStatsRequested] = useState(() => initialTab() === 'stats')
@@ -292,12 +294,14 @@ export default function App() {
           refreshMinutes={refreshMinutes}
           viewerLogin={viewerLogin}
           archivedRepos={archivedRepos}
-          onSave={(next, minutes, archived) => {
+          style={style}
+          onSave={(next, minutes, archived, chosenStyle) => {
             saveConfig(next)
             setConfig(next)
             storage.write('refreshMinutes', minutes)
             setRefreshMinutes(minutes)
             updateArchivedRepos(archived)
+            setStyle(chosenStyle)
             setShowSettings(false)
           }}
           onSignOut={signOut}

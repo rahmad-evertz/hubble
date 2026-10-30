@@ -17,6 +17,18 @@
           stored === 'dark' ||
           (stored !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches)
         document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light')
+        // Mirrors resolveStyle and supportsLens in src/hooks/useStyle.ts.
+        if (JSON.parse(localStorage.getItem('hubble.style') || 'null') === 'glass') {
+          document.documentElement.setAttribute('data-style', 'glass')
+          var brands = (navigator.userAgentData && navigator.userAgentData.brands) || []
+          if (
+            brands.some(function (b) {
+              return b.brand === 'Chromium'
+            })
+          ) {
+            document.documentElement.setAttribute('data-lens', 'on')
+          }
+        }
       } catch (e) {
         // Storage blocked or matchMedia missing. The bare :root tier renders a
         // correct light page, and useTheme stamps the real value on mount.
@@ -24,6 +36,41 @@
     </script>
   </head>
   <body>
+    <!-- Edge lens for the Liquid glass style, referenced as
+         backdrop-filter: url(#hub-lens) and applied only on Chromium (see
+         src/glass.css). Two stretched gradient maps put the displacement in
+         the outer band of a surface: red pushes along x, green along y, and
+         0.5 in either channel means no displacement, so the middle stays
+         undistorted and readable. -->
+    <svg width="0" height="0" aria-hidden="true" style="position: absolute">
+      <filter
+        id="hub-lens"
+        x="0"
+        y="0"
+        width="100%"
+        height="100%"
+        color-interpolation-filters="sRGB"
+      >
+        <feImage
+          result="mapX"
+          preserveAspectRatio="none"
+          href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3ClinearGradient id='g'%3E%3Cstop offset='0' stop-color='%23f00'/%3E%3Cstop offset='.12' stop-color='%23800000'/%3E%3Cstop offset='.88' stop-color='%23800000'/%3E%3Cstop offset='1' stop-color='%23000'/%3E%3C/linearGradient%3E%3Crect width='100' height='100' fill='url(%23g)'/%3E%3C/svg%3E"
+        />
+        <feImage
+          result="mapY"
+          preserveAspectRatio="none"
+          href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3ClinearGradient id='g' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%230f0'/%3E%3Cstop offset='.18' stop-color='%23008000'/%3E%3Cstop offset='.82' stop-color='%23008000'/%3E%3Cstop offset='1' stop-color='%23000'/%3E%3C/linearGradient%3E%3Crect width='100' height='100' fill='url(%23g)'/%3E%3C/svg%3E"
+        />
+        <feComposite in="mapX" in2="mapY" operator="arithmetic" k2="1" k3="1" result="map" />
+        <feDisplacementMap
+          in="SourceGraphic"
+          in2="map"
+          scale="36"
+          xChannelSelector="R"
+          yChannelSelector="G"
+        />
+      </filter>
+    </svg>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

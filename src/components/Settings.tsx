@@ -1,15 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { STYLE_LABEL, type Style } from '../hooks/useStyle'
 import { isValidLogin } from '../lib/validate'
 import type { AppConfig } from '../types'
 
 const REFRESH_OPTIONS = [0, 1, 2, 5, 10, 15, 30]
+const STYLES: Style[] = ['classic', 'glass']
 
 type Props = {
   config: AppConfig
   refreshMinutes: number
   viewerLogin: string | null
   archivedRepos: string[]
-  onSave: (config: AppConfig, refreshMinutes: number, archivedRepos: string[]) => void
+  style: Style
+  onSave: (config: AppConfig, refreshMinutes: number, archivedRepos: string[], style: Style) => void
   onSignOut: () => void
   onClose: () => void
 }
@@ -19,6 +22,7 @@ export default function Settings({
   refreshMinutes,
   viewerLogin,
   archivedRepos,
+  style,
   onSave,
   onSignOut,
   onClose,
@@ -27,6 +31,7 @@ export default function Settings({
   const [org, setOrg] = useState(config.org)
   const [minutes, setMinutes] = useState(refreshMinutes)
   const [archived, setArchived] = useState(archivedRepos)
+  const [chosenStyle, setChosenStyle] = useState(style)
   const [error, setError] = useState<string | null>(null)
 
   const [closing, setClosing] = useState(false)
@@ -71,6 +76,7 @@ export default function Settings({
       },
       minutes,
       archived,
+      chosenStyle,
     )
   }
 
@@ -138,6 +144,25 @@ export default function Settings({
             <div className="hint">
               Notification polling is additionally clamped to the minimum interval GitHub
               advertises.
+            </div>
+          </div>
+
+          <div className="field">
+            <label htmlFor="s-style">Style</label>
+            <select
+              id="s-style"
+              value={chosenStyle}
+              onChange={(e) => setChosenStyle(e.target.value as Style)}
+            >
+              {STYLES.map((option) => (
+                <option key={option} value={option}>
+                  {STYLE_LABEL[option]}
+                </option>
+              ))}
+            </select>
+            <div className="hint">
+              Works with every theme. Liquid glass bends the background at the edges of the header
+              and tabs in Chrome and Edge.
             </div>
           </div>
 

@@ -1,0 +1,371 @@
+/* Liquid glass style. Everything here is scoped under data-style='glass', so
+   Classic renders exactly as index.css alone describes it. Loaded after
+   index.css, and most of it is token overrides: the surface rules in index.css
+   already read --glass-*, --border, --radius and friends.
+
+   The rules from index.css that bind this file too:
+   - Blur only on surfaces that exist once on screen. Cards, rows and diff files
+     get the tint and the rim, never their own backdrop-filter.
+   - No backdrop-filter, filter, transform or perspective on html, body, .app or
+     .main. The wallpaper lives on body's pseudo-elements for that reason.
+   Both are checked by cssContract.test.ts. */
+
+/* ---------------------------------------------------------------- tokens --- */
+
+:root[data-style='glass'] {
+  --radius: 12px;
+  --lg-radius-lg: 22px;
+  --lg-blur: 26px;
+  --lg-sat: 185%;
+  --blur-rail: var(--lg-blur);
+  --blur-overlay: 32px;
+  --blur-scrim: 18px;
+
+  --lg-base: #f1eff9;
+  /* Opacity floor for text-bearing surfaces. At 62% white over the brightest
+     wallpaper lobe, --fg still clears 4.5:1. */
+  --lg-fill: rgb(255 255 255 / 62%);
+  --lg-fill-soft: rgb(255 255 255 / 50%);
+  --lg-fill-strong: rgb(255 255 255 / 90%);
+  --lg-pill: rgb(255 255 255 / 92%);
+  --lg-field: rgb(255 255 255 / 82%);
+  --lg-sheen: linear-gradient(
+    150deg,
+    rgb(255 255 255 / 45%),
+    rgb(255 255 255 / 0%) 42%,
+    rgb(255 255 255 / 12%)
+  );
+  --lg-rim: rgb(255 255 255 / 85%);
+  --lg-rim-soft: rgb(255 255 255 / 40%);
+  --lg-glow: rgb(255 255 255 / 30%);
+  --lg-shadow: 0 1px 2px rgb(40 40 90 / 8%), 0 10px 34px rgb(60 50 120 / 14%);
+
+  --border: rgb(30 40 80 / 12%);
+  --border-subtle: rgb(30 40 80 / 8%);
+  --bg-subtle: rgb(255 255 255 / 45%);
+  --bg-inset: rgb(40 50 100 / 7%);
+  --scrim: rgb(235 232 248 / 35%);
+
+  --wall-1: #8fb0ff;
+  --wall-2: #d3a6ff;
+  --wall-3: #ffbf96;
+  --wall-4: #94e3d6;
+
+  --glass-overlay: var(--lg-sheen), var(--lg-fill);
+  --glass-rail: var(--lg-fill);
+  --glass-edge: var(--lg-rim);
+  --glass-sat: var(--lg-sat);
+
+  --anim-nebula: lg-drift-a;
+  --anim-field: lg-drift-b;
+}
+
+:root[data-style='glass'][data-theme='dark'] {
+  --lg-base: #090b18;
+  /* Dark glass needs far less opacity: the wallpaper is deep, so light text
+     keeps its contrast through a thin fill. */
+  --lg-fill: rgb(22 26 44 / 52%);
+  --lg-fill-soft: rgb(255 255 255 / 6%);
+  --lg-fill-strong: rgb(20 24 40 / 86%);
+  --lg-pill: rgb(255 255 255 / 16%);
+  --lg-field: rgb(255 255 255 / 7%);
+  --lg-sheen: linear-gradient(
+    150deg,
+    rgb(255 255 255 / 14%),
+    rgb(255 255 255 / 0%) 42%,
+    rgb(255 255 255 / 4%)
+  );
+  --lg-rim: rgb(255 255 255 / 22%);
+  --lg-rim-soft: rgb(255 255 255 / 10%);
+  --lg-glow: rgb(255 255 255 / 6%);
+  --lg-shadow: 0 1px 2px rgb(0 0 0 / 40%), 0 12px 40px rgb(0 0 0 / 45%);
+
+  --border: rgb(255 255 255 / 12%);
+  --border-subtle: rgb(255 255 255 / 7%);
+  --bg-subtle: rgb(255 255 255 / 5%);
+  --bg-inset: rgb(255 255 255 / 9%);
+  --scrim: rgb(4 6 16 / 45%);
+
+  --wall-1: #2f4dff;
+  --wall-2: #8a3dff;
+  --wall-3: #ff6a2c;
+  --wall-4: #0fb5a0;
+}
+
+/* ------------------------------------------------------------- wallpaper --- */
+
+:root[data-style='glass'] {
+  background: var(--lg-base);
+}
+
+/* Two layers of soft lobes drifting on different periods, so the field never
+   visibly repeats. Overscanned past the drift amplitude so no layer edge ever
+   enters the viewport. The pointer parallax transform from index.css still
+   applies on top. */
+:root[data-style='glass'] body::before,
+:root[data-style='glass'] body::after {
+  inset: -12vmax;
+  background-size: auto;
+}
+
+:root[data-style='glass'] body::before {
+  background-image:
+    radial-gradient(38vmax 34vmax at 18% 22%, var(--wall-1), transparent 70%),
+    radial-gradient(34vmax 30vmax at 82% 30%, var(--wall-2), transparent 70%),
+    radial-gradient(40vmax 30vmax at 60% 88%, var(--wall-3), transparent 70%);
+  opacity: 0.85;
+  animation: lg-drift-a 60s var(--ease-in-out) infinite alternate;
+  animation-name: var(--anim-nebula);
+}
+
+:root[data-style='glass'] body::after {
+  background-image:
+    radial-gradient(30vmax 26vmax at 30% 70%, var(--wall-4), transparent 70%),
+    radial-gradient(26vmax 22vmax at 78% 78%, var(--wall-1), transparent 70%);
+  opacity: 0.6;
+  animation: lg-drift-b 84s var(--ease-in-out) infinite alternate;
+  animation-name: var(--anim-field);
+}
+
+@keyframes lg-drift-a {
+  from {
+    translate: 0 0;
+    scale: 1;
+  }
+  to {
+    translate: 5vmax -4vmax;
+    scale: 1.08;
+  }
+}
+
+@keyframes lg-drift-b {
+  from {
+    translate: 0 0;
+  }
+  to {
+    translate: -6vmax 3vmax;
+  }
+}
+
+/* ----------------------------------------------------- singleton surfaces --- */
+
+/* The one glass recipe: sheen over fill, saturating blur, a bright top rim, a
+   softer side rim and a faint inner glow. Drawn entirely with box-shadow so it
+   never competes with the ::before / ::after these surfaces already use for
+   the loading bar, the quota bar and the tile light. */
+:root[data-style='glass'] :is(.header, .footer, .tabs, .pr-list, .card, .modal, .setup-card) {
+  background: var(--lg-sheen), var(--lg-fill);
+  backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-sat));
+  -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-sat));
+  border: 1px solid var(--lg-rim-soft);
+  box-shadow:
+    var(--lg-shadow),
+    inset 0 1px 0 var(--lg-rim),
+    inset 0 0 0 1px var(--lg-rim-soft),
+    inset 0 0 28px var(--lg-glow);
+}
+
+/* Floating bars, as on iOS: inset from the viewport edge and fully rounded. */
+:root[data-style='glass'] .header {
+  top: 10px;
+  margin: 10px 12px 0;
+  border-radius: var(--lg-radius-lg);
+}
+
+:root[data-style='glass'] .footer {
+  margin: 0 12px 10px;
+  border-radius: 16px;
+}
+
+:root[data-style='glass'] :is(.modal, .setup-card) {
+  border-radius: 26px;
+}
+
+/* .modal-backdrop carries its own backdrop-filter, which makes it the backdrop
+   root: the dialog's blur then samples only the scrim, not the page, so the
+   frost has to come from the fill. */
+:root[data-style='glass'] .modal {
+  background: var(--lg-sheen), var(--lg-fill-strong);
+}
+
+:root[data-style='glass'] :is(.pr-list, .card) {
+  border-radius: 20px;
+}
+
+/* The quota bar runs along the footer's top edge, which is now rounded, so it
+   is inset to stay inside the corners rather than overhanging them. */
+:root[data-style='glass'] .footer::before {
+  left: 16px;
+  width: calc(var(--quota, 1) * (100% - 32px));
+  border-radius: 2px;
+}
+
+/* Rails inside a glass surface would stack a second fill on the first. */
+:root[data-style='glass'] :is(.modal-head, .modal-foot, .pr-actions-bar, .panel-head) {
+  background: transparent;
+}
+
+/* ------------------------------------------------------------------ tabs --- */
+
+:root[data-style='glass'] .tabs {
+  width: fit-content;
+  max-width: 100%;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 999px;
+}
+
+:root[data-style='glass'] .tab {
+  margin-bottom: 0;
+  padding: 6px 14px;
+  border: none;
+  border-radius: 999px;
+}
+
+:root[data-style='glass'] .tab:hover {
+  background: var(--bg-inset);
+}
+
+/* The selected tab is a raised lozenge rather than an underline. */
+:root[data-style='glass'] .tab[aria-selected='true'] {
+  background: var(--lg-pill);
+  box-shadow:
+    0 2px 10px rgb(0 0 0 / 10%),
+    inset 0 1px 0 var(--lg-rim);
+}
+
+/* ------------------------------------------------------- repeated surfaces --- */
+
+:root[data-style='glass'] .pr-card {
+  background: var(--lg-fill-soft);
+  border-radius: 16px;
+  box-shadow:
+    0 4px 16px rgb(0 0 0 / 8%),
+    inset 0 1px 0 var(--lg-rim);
+}
+
+:root[data-style='glass'] .pr-card-open {
+  border-radius: 16px;
+}
+
+:root[data-style='glass'] .pr-card:hover,
+:root[data-style='glass'] .pr-card:focus-within {
+  background: var(--lg-sheen), var(--lg-fill-strong);
+  box-shadow:
+    var(--lg-shadow),
+    inset 0 1px 0 var(--lg-rim);
+}
+
+:root[data-style='glass'] :is(.tile, .diff-file, .comment-thread, .inbox-group) {
+  border-radius: 14px;
+  box-shadow: inset 0 1px 0 var(--lg-rim-soft);
+}
+
+/* Sticky header cells sit over scrolling rows. With no blur of their own, a
+   near-opaque fill is the only thing stopping those rows showing through. */
+:root[data-style='glass'] table.prs th {
+  background: var(--lg-fill-strong);
+}
+
+/* -------------------------------------------------------------- controls --- */
+
+/* Coloured and ghost variants keep their own fill; only the neutral button
+   turns to glass. */
+:root[data-style='glass'] .btn:not(.btn-primary, .btn-success, .btn-danger, .btn-ghost) {
+  background: var(--lg-fill-soft);
+  border-color: var(--lg-rim-soft);
+  box-shadow: inset 0 1px 0 var(--lg-rim-soft);
+}
+
+:root[data-style='glass']
+  .btn:not(.btn-primary, .btn-success, .btn-danger, .btn-ghost):hover:not(:disabled) {
+  background: var(--lg-pill);
+}
+
+:root[data-style='glass'] .btn {
+  border-radius: 999px;
+}
+
+:root[data-style='glass'] .btn-primary,
+:root[data-style='glass'] .btn-primary:hover:not(:disabled) {
+  background: var(--accent);
+  box-shadow:
+    0 4px 14px color-mix(in srgb, var(--accent) 35%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / 35%);
+}
+
+:root[data-style='glass'] .btn-ghost {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+:root[data-style='glass'] :is(input[type='text'], input[type='password'], select, textarea) {
+  background: var(--lg-field);
+  border-color: var(--lg-rim-soft);
+  border-radius: 12px;
+}
+
+/* Glass dialogs enter in 2D. Chromium stops painting an overlay running the
+   3D hub-overlay-in while any url() backdrop-filter is on the page, so with the
+   lens active the PR dialog came up as an empty scrim. A drop and scale reads
+   the same at this size. The exit keeps its fill, which Settings and the PR
+   dialog wait on via animationend before unmounting. */
+:root[data-style='glass'] .modal {
+  animation-name: lg-overlay-in;
+}
+
+:root[data-style='glass'] .modal.is-closing {
+  animation-name: lg-overlay-out;
+}
+
+@keyframes lg-overlay-in {
+  from {
+    transform: translateY(-12px) scale(0.97);
+  }
+}
+
+@keyframes lg-overlay-out {
+  to {
+    transform: translateY(-6px) scale(0.98);
+    opacity: 0;
+  }
+}
+
+/* ------------------------------------------------------------------ lens --- */
+
+/* Chromium only; useStyle and the pre-paint script set data-lens. Blur and
+   saturation are repeated after the url() so the surface keeps its frost even
+   where the displacement contributes little. Not on .modal: an element that
+   animates its own transform is the case above, so dialogs keep plain blur. */
+:root[data-style='glass'][data-lens='on'] :is(.header, .tabs) {
+  backdrop-filter: url(#hub-lens) blur(var(--lg-blur)) saturate(var(--lg-sat));
+}
+
+/* ------------------------------------------------------------- fallbacks --- */
+
+/* Same specificity as the token block above, which a bare :root in index.css's
+   own media blocks could not beat. */
+@media (prefers-reduced-motion: reduce) {
+  :root[data-style='glass'] {
+    --anim-nebula: none;
+    --anim-field: none;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  :root[data-style='glass'] {
+    --lg-fill: var(--lg-fill-strong);
+    --lg-fill-soft: var(--lg-fill-strong);
+    --lg-blur: 0px;
+  }
+
+  :root[data-style='glass'] body::before,
+  :root[data-style='glass'] body::after {
+    opacity: 0.25;
+  }
+
+  :root[data-style='glass'][data-lens='on'] :is(.header, .tabs) {
+    backdrop-filter: none;
+  }
+}
