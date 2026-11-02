@@ -425,9 +425,8 @@ export default function PrDetailModal({
                 </div>
               )}
 
-              {/* Unconditional. This used to render only when a pull request had
-                  no comments and no reviews at all, so you could not comment on
-                  anything with an existing conversation. */}
+              {/* Unconditional: a pull request with an existing conversation is
+                  exactly the one you are most likely to want to reply on. */}
               <div className="pr-comment-form">
                 <h3>Add a comment</h3>
                 <textarea

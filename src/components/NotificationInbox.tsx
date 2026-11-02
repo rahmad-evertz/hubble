@@ -170,7 +170,7 @@ export default function NotificationInbox({
                     title="Mark as read"
                     onClick={() => onMarkRead([item.id])}
                   >
-                    ✓
+                    Mark read
                   </button>
                 </div>
               ))}

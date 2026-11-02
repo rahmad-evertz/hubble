@@ -63,9 +63,8 @@ export default function MonthlyChart({ months }: Props) {
       </div>
 
       {/* The tooltip is positioned as a percentage of this wrapper, which is
-          exactly the svg's box. It used to be a percentage of .chart, whose
-          height also includes the legend above, so it sat low by the legend's
-          height on every reading. */}
+          exactly the svg's box. Not .chart: its height also includes the
+          legend above, which would push every reading low by that height. */}
       <div className="chart-plot">
         <svg
           viewBox={`0 0 ${W} ${H}`}

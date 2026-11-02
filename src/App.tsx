@@ -270,7 +270,7 @@ export default function App() {
             <NotificationInbox
               items={notifications.items}
               available={inboxAvailable}
-              viewerLogin={viewerLogin ?? '\u2014'}
+              viewerLogin={viewerLogin ?? 'unknown'}
               username={config.username}
               marking={notifications.marking}
               onMarkRead={(ids) => void notifications.markRead(ids)}
