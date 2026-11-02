@@ -40,7 +40,7 @@ export default function CommentThread({
   return (
     <div className="comment-thread-wrap">
       <div className="comment-thread">
-        {resolved && <div className="thread-resolved-bar">✓ Resolved</div>}
+        {resolved && <div className="thread-resolved-bar">Resolved</div>}
         {isOutdated && <div className="thread-resolved-bar">Outdated</div>}
         {comments.map((comment) => (
           <div key={comment.id} className="comment">

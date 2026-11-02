@@ -86,10 +86,10 @@ export function usePrDetail(
         const state = await submitReview(pr.id, event, body, creds)
         onMutated?.({ type: 'review', userLatestReview: state as ReviewState })
         // reviewDecision is the aggregate across every reviewer, so one
-        // reviewer cannot derive it. Refetch rather than guess: this used to
-        // hardcode APPROVED, which painted a green badge after Request
-        // changes. userLatestReview above is this user's own review and is
-        // exact, so the row updates immediately either way.
+        // reviewer cannot derive it. Refetch rather than guess: assuming
+        // APPROVED would paint a green badge after Request changes.
+        // userLatestReview above is this user's own review and is exact, so
+        // the row updates immediately either way.
         refresh()
       } catch (e) {
         if (e instanceof AuthError) throw e
@@ -149,7 +149,6 @@ export function usePrDetail(
       setError(null)
       try {
         const comment = await replyToReviewThread(threadId, body, creds)
-        // Append the new comment to the thread
         if (data) {
           const updated = {
             ...data,
@@ -180,7 +179,6 @@ export function usePrDetail(
       setError(null)
       try {
         const comment = await addConversationComment(pr.id, body, creds)
-        // Append to general comments
         if (data) {
           setData({ ...data, comments: [...data.comments, comment] })
         }

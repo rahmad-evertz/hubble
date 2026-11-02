@@ -126,9 +126,10 @@
   --radius: 6px;
   --mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
 
-  /* Aliases kept so existing box-shadow consumers do not change. Light mode
-     also gets a real --shadow-lg, which it never had: a light-mode
-     `box-shadow: var(--shadow-lg)` used to drop the whole declaration. */
+  /* Aliases onto the elevation ladder for the rules that read --shadow and
+     --shadow-lg. Defined here rather than per theme, so neither theme can
+     leave one undefined: an undefined token drops the whole box-shadow
+     declaration. */
   --shadow: var(--elev-2);
   --shadow-lg: var(--elev-4);
 
@@ -179,8 +180,7 @@
   --blur-scrim: 6px;
 
   /* Glass recipes, derived from the themed surface tokens so each is a single
-     value that is correct in both themes. The 82/92 mix is what dark mode
-     already shipped, so the frosted modal does not shift. */
+     value that is correct in both themes. */
   --glass-overlay: linear-gradient(
     180deg,
     color-mix(in srgb, var(--bg-subtle) 82%, transparent),
@@ -296,8 +296,8 @@ button {
   background: var(--glass-rail);
 }
 
-/* Tier 3, overlay. Replaces the two duplicated dark-only blocks this file used
-   to carry, and gives light mode the frosted treatment it never had. */
+/* Tier 3, overlay. One frosted recipe for both themes, built from themed
+   tokens, so light and dark cannot drift apart. */
 .modal,
 .setup-card,
 .chart-tooltip {
@@ -327,10 +327,8 @@ button {
   box-shadow: inset 0 1px 2px var(--edge-lo);
 }
 
-/* Both themes. This was dark-only, which meant a light-mode user clicking the
-   same button got different feedback for no reason. select was missing from
-   the list, and colour was never transitioned even though .tab:hover and
-   .btn-ghost:hover both change it. */
+/* Both themes, so the same control gives the same feedback in either. Colour
+   is transitioned because .tab:hover and .btn-ghost:hover both change it. */
 .btn,
 .tab,
 select,
@@ -781,7 +779,7 @@ table.prs tbody tr:last-child td {
   white-space: nowrap;
 }
 
-/* Former inline styles, so the two PR views share one definition. */
+/* Shared by both PR views, so they cannot drift apart. */
 .absent,
 .avatars-more {
   color: var(--fg-subtle);
@@ -2149,7 +2147,7 @@ table.prs tbody tr:focus-visible {
 
 /* --------------------------------------------------------- shared chrome --- */
 
-/* Former inline styles, collected so the shape is defined once. */
+/* Small layout shapes used across components, defined once. */
 .row-actions {
   display: flex;
   justify-content: flex-end;
